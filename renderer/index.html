@@ -28,6 +28,7 @@
             <button class="nav-tab" data-tab="settings" type="button">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m19.4 13 .1-1-.1-1 2-1.5-2-3.4-2.4 1a8 8 0 0 0-1.8-1L15 3.5h-4l-.3 2.6a8 8 0 0 0-1.8 1l-2.4-1-2 3.4 2 1.5-.1 1 .1 1-2 1.5 2 3.4 2.4-1a8 8 0 0 0 1.8 1l.3 2.6h4l.3-2.6a8 8 0 0 0 1.8-1l2.4 1 2-3.4-2-1.5ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/></svg>
                 Ajustes
+                <span class="update-badge hidden" id="settingsUpdateBadge">●</span>
             </button>
         </nav>
 
@@ -52,6 +53,20 @@
 
     <div class="app-shell">
         <main class="main-content">
+            <aside class="update-banner hidden" id="updateBanner" role="alert">
+                <div class="update-banner-content">
+                    <span class="update-pulse"></span>
+                    <div class="update-banner-text">
+                        <strong id="updateBannerTitle">Actualización disponible</strong>
+                        <span id="updateBannerMessage">Hay una nueva versión lista para instalar.</span>
+                    </div>
+                </div>
+                <div class="update-banner-actions">
+                    <button class="btn primary small" id="btnBannerUpdate" type="button">Instalar ahora</button>
+                    <button class="modal-close banner-close" id="btnDismissBanner" type="button" aria-label="Cerrar aviso">×</button>
+                </div>
+            </aside>
+
             <section class="hero-row" aria-labelledby="pageTitle">
                 <div class="hero-copy">
                     <span class="eyebrow">CONTROL CENTER // LOCAL</span>

@@ -837,6 +837,15 @@ function bindEvents() {
         playSound();
     });
 
+    $('btnDismissBanner').addEventListener('click', () => $('updateBanner').classList.add('hidden'));
+    $('btnBannerUpdate').addEventListener('click', () => {
+        if (!$('btnInstallUpdate').classList.contains('hidden')) {
+            installUpdate();
+        } else {
+            openSettings();
+        }
+    });
+
     document.addEventListener('keydown', (event) => {
         trapModalFocus(event);
         if (event.key === 'Escape') {
@@ -884,13 +893,28 @@ async function initialize() {
                     $('updateStatusText').textContent = 'Buscando actualizaciones…';
                 } else if (payload.status === 'available') {
                     $('updateStatusText').textContent = `Nueva versión ${payload.version ? `v${payload.version}` : ''} disponible. Descargando…`;
-                    showToast(`Nueva versión ${payload.version ? `v${payload.version}` : ''} disponible. Descargando…`);
+                    $('updateBannerTitle').textContent = 'Actualización disponible';
+                    $('updateBannerMessage').textContent = payload.version ? `Descargando v${payload.version} en segundo plano…` : 'Descargando nueva versión en segundo plano…';
+                    $('btnBannerUpdate').textContent = 'Descargando…';
+                    $('btnBannerUpdate').disabled = true;
+                    $('updateBanner').classList.remove('hidden');
+                    $('settingsUpdateBadge').classList.remove('hidden');
+                    showToast(`Nueva versión ${payload.version ? `v${payload.version}` : ''} disponible.`);
                 } else if (payload.status === 'downloading') {
-                    $('updateStatusText').textContent = `Descargando actualización: ${payload.percent || 0}%`;
+                    const pct = payload.percent || 0;
+                    $('updateStatusText').textContent = `Descargando actualización: ${pct}%`;
+                    $('updateBannerMessage').textContent = `Descargando: ${pct}%`;
+                    $('btnBannerUpdate').textContent = `${pct}%`;
                 } else if (payload.status === 'downloaded') {
                     $('updateStatusText').textContent = `Versión ${payload.version ? `v${payload.version}` : ''} lista para instalar.`;
                     $('btnInstallUpdate').classList.remove('hidden');
-                    showToast('Actualización lista. Puedes reiniciar para instalarla.', 'success');
+                    $('updateBannerTitle').textContent = '¡Actualización lista!';
+                    $('updateBannerMessage').textContent = payload.version ? `La versión v${payload.version} está lista. Reinicia para aplicarla.` : 'Reinicia RemSwitcher para aplicar los cambios.';
+                    $('btnBannerUpdate').textContent = 'Reiniciar y actualizar';
+                    $('btnBannerUpdate').disabled = false;
+                    $('updateBanner').classList.remove('hidden');
+                    $('settingsUpdateBadge').classList.remove('hidden');
+                    showToast('Actualización lista. Pulsa en el aviso para reiniciar.', 'success');
                 } else if (payload.status === 'not-available') {
                     $('updateStatusText').textContent = 'Tienes la versión más reciente.';
                 } else if (payload.status === 'error') {
