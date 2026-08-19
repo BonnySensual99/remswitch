@@ -9,8 +9,21 @@ const elements = {
 
 const GAME_LABELS = { valorant: 'VALORANT', league_of_legends: 'LEAGUE OF LEGENDS' };
 const RANKS = {
-    valorant: ['Sin rango', 'Hierro', 'Bronce', 'Plata', 'Oro', 'Platino', 'Diamante', 'Ascendente', 'Inmortal', 'Radiante'],
-    league_of_legends: ['Sin rango', 'Hierro', 'Bronce', 'Plata', 'Oro', 'Platino', 'Esmeralda', 'Diamante', 'Máster', 'Gran Máster', 'Challenger']
+    valorant: [
+        'Sin rango',
+        'Hierro 1', 'Hierro 2', 'Hierro 3',
+        'Bronce 1', 'Bronce 2', 'Bronce 3',
+        'Plata 1', 'Plata 2', 'Plata 3',
+        'Oro 1', 'Oro 2', 'Oro 3',
+        'Platino 1', 'Platino 2', 'Platino 3',
+        'Diamante 1', 'Diamante 2', 'Diamante 3',
+        'Ascendente 1', 'Ascendente 2', 'Ascendente 3',
+        'Inmortal 1', 'Inmortal 2', 'Inmortal 3',
+        'Radiante'
+    ],
+    league_of_legends: [
+        'Sin rango', 'Hierro', 'Bronce', 'Plata', 'Oro', 'Platino', 'Esmeralda', 'Diamante', 'Máster', 'Gran Máster', 'Challenger'
+    ]
 };
 const AVATARS = {
     valorant: ['Jett', 'Phoenix', 'Reyna', 'Chamber', 'Viper', 'Omen', 'Fade', 'Iso'],
@@ -429,6 +442,42 @@ function getRankClass(rank) {
     return 'rank-unranked';
 }
 
+function getRankAsset(game, rank) {
+    if (!rank || rank.toLowerCase().includes('sin rango')) {
+        return 'assets/ranks/valorant/unranked.svg';
+    }
+    const r = rank.toLowerCase();
+    if (game === 'league_of_legends') {
+        if (r.includes('challenger')) return 'assets/ranks/lol/challenger.png';
+        if (r.includes('gran máster') || r.includes('grandmaster') || r.includes('gran master')) return 'assets/ranks/lol/grandmaster.png';
+        if (r.includes('máster') || r.includes('master')) return 'assets/ranks/lol/master.png';
+        if (r.includes('diamante') || r.includes('diamond')) return 'assets/ranks/lol/diamond.png';
+        if (r.includes('esmeralda') || r.includes('emerald')) return 'assets/ranks/lol/emerald.png';
+        if (r.includes('platino') || r.includes('platinum')) return 'assets/ranks/lol/platinum.png';
+        if (r.includes('oro') || r.includes('gold')) return 'assets/ranks/lol/gold.png';
+        if (r.includes('plata') || r.includes('silver')) return 'assets/ranks/lol/silver.png';
+        if (r.includes('bronce') || r.includes('bronze')) return 'assets/ranks/lol/bronze.png';
+        if (r.includes('hierro') || r.includes('iron')) return 'assets/ranks/lol/iron.png';
+        return 'assets/ranks/valorant/unranked.svg';
+    }
+
+    let tierNum = '1';
+    if (r.includes('3')) tierNum = '3';
+    else if (r.includes('2')) tierNum = '2';
+
+    if (r.includes('radiante') || r.includes('radiant')) return 'assets/ranks/valorant/radiant.svg';
+    if (r.includes('inmortal') || r.includes('immortal')) return `assets/ranks/valorant/immortal${tierNum}.svg`;
+    if (r.includes('ascendente') || r.includes('ascendant')) return `assets/ranks/valorant/ascendant${tierNum}.svg`;
+    if (r.includes('diamante') || r.includes('diamond')) return `assets/ranks/valorant/diamond${tierNum}.svg`;
+    if (r.includes('platino') || r.includes('platinum')) return `assets/ranks/valorant/platinum${tierNum}.svg`;
+    if (r.includes('oro') || r.includes('gold')) return `assets/ranks/valorant/gold${tierNum}.svg`;
+    if (r.includes('plata') || r.includes('silver')) return `assets/ranks/valorant/silver${tierNum}.svg`;
+    if (r.includes('bronce') || r.includes('bronze')) return `assets/ranks/valorant/bronze${tierNum}.svg`;
+    if (r.includes('hierro') || r.includes('iron')) return `assets/ranks/valorant/iron${tierNum}.svg`;
+
+    return 'assets/ranks/valorant/unranked.svg';
+}
+
 function getAvatarKey(account) {
     if (account.avatarAgent) return account.avatarAgent.toLowerCase();
     return account.game === 'league_of_legends' ? 'ahri' : 'jett';
@@ -499,7 +548,7 @@ function renderAccounts() {
                     <span class="account-id">${escapeHtml(account.riotId || 'Riot ID sin configurar')}</span>
                     <div class="meta-row">
                         <span class="meta-chip meta-region">${escapeHtml(account.region)}</span>
-                        <span class="meta-chip meta-rank ${getRankClass(account.rank)}">${getRankIconSvg(account.rank)}<span>${escapeHtml(account.rank || 'Sin rango')}</span></span>
+                        <span class="meta-chip meta-rank ${getRankClass(account.rank)}"><img class="rank-img" src="${escapeHtml(getRankAsset(account.game, account.rank))}" alt="" aria-hidden="true" /><span>${escapeHtml(account.rank || 'Sin rango')}</span></span>
                         <span class="meta-chip meta-time">${escapeHtml(formatRelative(account.lastUsedAt))}</span>
                         ${account.level ? `<span class="meta-chip meta-level">Nvl. ${escapeHtml(account.level)}</span>` : ''}
                     </div>

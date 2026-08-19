@@ -307,6 +307,13 @@ body[data-view="accounts"] .dashboard-brief { display: none; }
 .avatar-thresh { background: linear-gradient(135deg, #065f46, #2dd4bf); color: #fff; border-color: #5eead4; }
 .avatar-akali { background: linear-gradient(135deg, #15803d, #22c55e); color: #fff; border-color: #86efac; }
 .avatar-ekko { background: linear-gradient(135deg, #0284c7, #a3e635); color: #082f49; border-color: #bef264; }
+.rank-img {
+    width: 17px;
+    height: 17px;
+    object-fit: contain;
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 4px rgba(255, 255, 255, .25));
+}
 .rank-svg {
     width: 14px;
     height: 14px;
