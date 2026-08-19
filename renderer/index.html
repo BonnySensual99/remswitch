@@ -87,8 +87,10 @@
                     <h2 id="briefTitle">Listo para cambiar</h2>
                     <p id="briefMessage">Selecciona una cuenta propia y RemSwitcher preparará Riot Client.</p>
                     <div class="brief-actions">
-                        <button class="btn secondary small" id="btnQuickImport" type="button">Importar sesión</button>
-                        <button class="btn secondary small" id="btnSyncLiveRank" type="button">Sincronizar rango</button>
+                        <button class="btn secondary small" id="btnSyncLiveRank" type="button">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+                            Sincronizar rango en vivo
+                        </button>
                     </div>
                 </div>
                 <div class="brief-metrics" aria-label="Resumen local">
@@ -116,9 +118,6 @@
                         <input id="searchInput" type="search" aria-label="Buscar cuentas" placeholder="Buscar cuenta…" autocomplete="off">
                         <kbd class="search-kbd-hint">Ctrl F</kbd>
                     </label>
-                    <button class="icon-btn" id="btnImport" type="button" aria-label="Importar sesión activa" title="Importar sesión activa">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3h2v10l3.5-3.5 1.4 1.4L12 16.8l-5.9-5.9 1.4-1.4L11 13V3Zm-6 16h14v2H5v-2Z"/></svg>
-                    </button>
                 </div>
             </section>
 
@@ -168,6 +167,16 @@
                 <div><span class="eyebrow" id="modalEyebrow">CREDENCIALES CIFRADAS</span><h2 id="modalTitle">Registrar cuenta</h2></div>
                 <button class="modal-close" id="btnCloseAccountModal" type="button" aria-label="Cerrar">×</button>
             </header>
+            <div class="autofill-banner" id="autofillBanner">
+                <div class="autofill-info">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 5.6L5 7l1.4-2.5L5 2l2.5 1.4L10 2 8.6 4.5 10 7 7.5 5.6zm12 9.8L17 14l1.4 2.5L17 19l2.5-1.4L22 19l-1.4-2.5L22 14l-2.5 1.4zM22 2l-2.5 1.4L17 2l1.4 2.5L17 7l2.5-1.4L22 7l-1.4-2.5L22 2zm-7.63 5.29c-.39-.39-1.02-.39-1.41 0L1.29 18.96c-.39.39-.39 1.02 0 1.41l2.34 2.34c.39.39 1.02.39 1.41 0L16.7 11.05c.39-.39.39-1.02 0-1.41l-2.33-2.35zm-1.03 5.49l-2.12-2.12 2.44-2.44 2.12 2.12-2.44 2.44z"/></svg>
+                    <div>
+                        <strong>¿Tienes Riot Client abierto?</strong>
+                        <small>Autocompleta Riot ID, región, rango y nivel en 1 clic.</small>
+                    </div>
+                </div>
+                <button class="btn secondary small" id="btnAutofillSession" type="button">Autocompletar datos</button>
+            </div>
             <form id="accountForm">
                 <input type="hidden" id="accId">
                 <div class="form-grid">

@@ -651,6 +651,8 @@ function openAccountModal(account = null) {
     $('accPassword').required = !account;
     $('accPassword').placeholder = account ? 'Dejar en blanco para conservar' : 'Protegida con DPAPI';
     $('modalTitle').textContent = account ? 'Editar cuenta' : 'Añadir cuenta';
+    const banner = $('autofillBanner');
+    if (banner) banner.style.display = account ? 'none' : 'flex';
     updateGameFields($('accGame').value, account?.rank, account?.avatarAgent);
     showModal(elements.accountModal);
 }
@@ -920,19 +922,33 @@ async function testRiotClient() {
     $('testRiotStatus').className = result.found ? 'state-ok' : 'state-bad';
 }
 
-async function importSession() {
+async function autofillSessionFromRiot() {
     if (!rendererApi || activeRequestId) return;
+    const btn = $('btnAutofillSession');
+    if (btn) btn.disabled = true;
     try {
-        elements.statusText.textContent = 'Buscando una sesión autenticada…';
+        showToast('Consultando sesión activa de Riot…');
         const info = await rendererApi.importActiveSession();
-        if (!info?.isValid) return showToast('No se detectó ninguna sesión activa.', 'error');
-        openAccountModal();
-        $('accDisplayName').value = info.displayName || '';
-        $('accRiotId').value = info.riotId || '';
-        $('accRegion').value = info.region || 'EU';
+        if (!info?.isValid) {
+            return showToast('No se detectó ninguna sesión activa en Riot Client.', 'error');
+        }
+        if (info.displayName) $('accDisplayName').value = info.displayName;
+        if (info.riotId) $('accRiotId').value = info.riotId;
+        if (info.region) $('accRegion').value = info.region;
+        if (info.game) {
+            $('accGame').value = info.game;
+            updateGameFields(info.game, info.rank);
+        } else if (info.rank) {
+            $('accRank').value = info.rank;
+        }
+        if (info.level) $('accLevel').value = info.level;
         $('accUsername').focus();
-        showToast('Sesión detectada. Introduce el usuario privado y la contraseña.');
-    } catch (error) { showToast(error.message || 'No se pudo importar la sesión.', 'error'); }
+        showToast('✓ Datos autocompletados. Escribe usuario y contraseña.', 'success');
+    } catch (error) {
+        showToast(error.message || 'No se pudo leer la sesión de Riot.', 'error');
+    } finally {
+        if (btn) btn.disabled = false;
+    }
 }
 
 function openProfile() {
@@ -953,8 +969,7 @@ function bindEvents() {
     $('btnMinimize').addEventListener('click', () => rendererApi?.minimizeWindow());
     $('btnClose').addEventListener('click', () => rendererApi?.closeWindow());
     $('btnAdd').addEventListener('click', () => openAccountModal());
-    $('btnImport').addEventListener('click', importSession);
-    $('btnQuickImport').addEventListener('click', importSession);
+    $('btnAutofillSession').addEventListener('click', autofillSessionFromRiot);
     $('btnViewAccounts').addEventListener('click', () => setView('accounts', true));
     $('userPill').addEventListener('click', openProfile);
 

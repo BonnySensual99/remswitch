@@ -482,6 +482,23 @@ body[data-view="accounts"] .dashboard-brief { display: none; }
 .modal-header h2 { margin: 3px 0 0; font-family: Impact, sans-serif; font-weight: 500; font-size: 24px; text-transform: uppercase; }
 .modal-close { width: 34px; height: 34px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; font-size: 20px; }
 .modal-close:hover { background: rgba(255,255,255,.06); color: #fff; }
+
+.autofill-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    border: 1px dashed rgba(var(--accent-rgb), .45);
+    border-radius: 10px;
+    background: linear-gradient(90deg, rgba(var(--accent-rgb), .08), rgba(255, 255, 255, .015));
+}
+.autofill-info { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.autofill-info svg { width: 20px; height: 20px; color: var(--accent-2); flex-shrink: 0; }
+.autofill-info strong { display: block; font-size: 11px; color: #fff; font-weight: 700; }
+.autofill-info small { display: block; font-size: 9px; color: var(--muted); margin-top: 1px; }
+
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px 12px; }
 .form-grid.compact { grid-template-columns: repeat(3, 1fr); }
 .form-group { min-width: 0; }
