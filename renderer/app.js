@@ -438,7 +438,6 @@ function renderAccounts() {
     $('statAccounts').textContent = accounts.length;
     $('statValorant').textContent = counts.valorant;
     $('statLol').textContent = counts.league_of_legends;
-    renderDashboard();
     elements.gameTabs.querySelectorAll('.game-tab').forEach((button) => {
         button.setAttribute('aria-pressed', String(button.dataset.game === currentFilter));
     });
@@ -455,9 +454,9 @@ function renderAccounts() {
         empty.className = 'empty-state';
         empty.innerHTML = accounts.length
             ? '<div class="empty-copy"><span class="eyebrow">SIN RESULTADOS</span><strong>Sin coincidencias</strong><p>Ajusta el filtro o la búsqueda para encontrar otra cuenta.</p><button class="btn secondary empty-clear" type="button">Limpiar filtros</button></div>'
-            : '<div class="empty-copy"><div class="empty-glyph" aria-hidden="true">+</div><span class="eyebrow">PRIMER DESPLIEGUE</span><strong>Tu bóveda está lista</strong><p>Registra una cuenta cifrada o importa la sesión que ya está abierta en Riot Client.</p><div class="empty-steps"><span><b>01</b>Registra</span><span><b>02</b>Confirma</span><span><b>03</b>Cambia</span></div><button class="btn secondary empty-import" type="button">Importar sesión activa</button></div>';
+            : '<div class="empty-copy"><div class="empty-glyph" aria-hidden="true">+</div><span class="eyebrow">PRIMER DESPLIEGUE</span><strong>Tu bóveda está lista</strong><p>Registra tu primera cuenta cifrada para cambiar con 1 solo clic.</p><div class="empty-steps"><span><b>01</b>Registra</span><span><b>02</b>Confirma</span><span><b>03</b>Cambia</span></div><button class="btn primary empty-add" type="button">+ Añadir primera cuenta</button></div>';
         elements.accountsList.append(empty);
-        empty.querySelector('.empty-import')?.addEventListener('click', importSession);
+        empty.querySelector('.empty-add')?.addEventListener('click', () => openAccountModal());
         empty.querySelector('.empty-clear')?.addEventListener('click', () => {
             elements.searchInput.value = '';
             currentFilter = 'all';
