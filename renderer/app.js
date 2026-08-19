@@ -1090,6 +1090,22 @@ function bindEvents() {
                 elements.searchInput.focus();
                 elements.searchInput.select();
             }
+        } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'n') {
+            if (!openModal) {
+                event.preventDefault();
+                openAccountModal();
+            }
+        } else if ((event.ctrlKey || event.metaKey) && event.key === ',') {
+            if (!openModal) {
+                event.preventDefault();
+                openSettings();
+            }
+        } else if (event.key === '/' && document.activeElement !== elements.searchInput && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
+            if (!openModal) {
+                event.preventDefault();
+                elements.searchInput.focus();
+                elements.searchInput.select();
+            }
         }
     });
     document.addEventListener('click', (event) => {

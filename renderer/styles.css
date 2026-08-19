@@ -510,6 +510,57 @@ fieldset legend { padding: 0 6px; color: var(--accent); font-size: 9px; font-wei
 .update-row strong { font-size: 11px; }
 .update-row small { color: var(--muted); margin-top: 2px; font-size: 9px; }
 .update-actions { display: flex; align-items: center; gap: 8px; }
+
+.shortcuts-fieldset { margin-top: 12px; }
+.shortcut-list { display: flex; flex-direction: column; gap: 7px; padding: 4px 0; }
+.shortcut-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .025);
+    border: 1px solid rgba(255, 255, 255, .04);
+}
+.shortcut-desc strong { display: block; font-size: 11px; font-weight: 700; color: var(--text); }
+.shortcut-desc small { display: block; font-size: 9px; color: var(--muted); margin-top: 1px; }
+.shortcut-input-wrap { min-width: 175px; }
+.shortcut-input {
+    width: 100%;
+    padding: 5px 8px;
+    font-size: 11px;
+    font-family: monospace;
+    color: var(--accent-2);
+    background: rgba(0, 0, 0, .35);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+}
+.shortcut-input:focus { border-color: var(--accent); outline: none; }
+.shortcut-keys { display: inline-flex; align-items: center; gap: 4px; }
+kbd {
+    display: inline-block;
+    padding: 2px 7px;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1.3;
+    color: var(--accent-2);
+    background: rgba(var(--accent-rgb), .12);
+    border: 1px solid rgba(var(--accent-rgb), .35);
+    border-radius: 5px;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, .35);
+}
+.or-sep { color: var(--muted-2); font-size: 10px; margin: 0 2px; }
+.search-kbd-hint {
+    margin-left: auto;
+    opacity: .65;
+    pointer-events: none;
+    font-size: 9px;
+    padding: 2px 5px;
+    flex-shrink: 0;
+}
+
 .advanced-settings { border: 1px solid var(--line); border-radius: 10px; padding: 0 12px 12px; }
 .advanced-settings summary { padding: 12px 0; cursor: pointer; color: #c6ceda; font-size: 11px; font-weight: 800; }
 .test-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; color: var(--muted); font-size: 10px; }
