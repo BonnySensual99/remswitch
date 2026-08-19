@@ -757,7 +757,7 @@ body {
 }
 .brand-block { gap: 11px; }
 .brand-logo { width: 34px; height: 34px; transition: transform .3s ease, filter .3s ease; }
-.brand-block:hover .brand-logo { transform: rotate(-5deg) scale(1.06); filter: drop-shadow(0 0 18px rgba(var(--accent-rgb), .68)); }
+.brand-block:hover .brand-logo { transform: scale(1.06); filter: drop-shadow(0 0 18px rgba(var(--accent-rgb), .68)); }
 .brand-block strong { font-family: "Segoe UI Variable", "Segoe UI", sans-serif; font-size: 13px; font-weight: 850; letter-spacing: .15em; }
 .brand-block span { color: var(--muted-2); font-size: 8px; letter-spacing: .15em; }
 .nav-tabs { gap: 3px; }
@@ -845,7 +845,7 @@ body {
 .account-card:hover { border-color: rgba(var(--accent-rgb), .45); background: linear-gradient(110deg, rgba(24, 34, 52, .98), rgba(13, 20, 32, .95)); box-shadow: 0 16px 32px rgba(0,0,0,.2); transform: translateY(-2px); }
 .account-card::before { width: 4px; opacity: .9; box-shadow: 0 0 16px rgba(var(--accent-rgb), .35); }
 .account-avatar { width: 56px; height: 56px; border-radius: 16px 5px 16px 5px; box-shadow: inset 0 0 18px rgba(var(--accent-rgb), .08); transition: transform .25s ease; }
-.account-card:hover .account-avatar { transform: rotate(-3deg) scale(1.04); }
+.account-card:hover .account-avatar { transform: scale(1.04); }
 .account-copy h3 { font-size: 15px; font-weight: 750; }
 .account-id { margin-top: 5px; color: #a2aec1; }
 .meta-row { margin-top: 8px; }
@@ -886,9 +886,8 @@ body {
 .modal-overlay.active .modal-card, .switch-overlay.active .switch-panel { transform: none; }
 .modal-overlay { background: rgba(2, 5, 10, .7); }
 .modal-card { border-color: rgba(var(--accent-rgb), .4); border-radius: 20px; background: linear-gradient(145deg, rgba(23, 32, 48, .98), rgba(9, 14, 23, .99)); box-shadow: 0 28px 90px rgba(0,0,0,.45), 0 0 45px rgba(var(--accent-rgb), .1); }
-.modal-header h2 { font-family: "Segoe UI Variable", "Segoe UI", sans-serif; font-size: 25px; font-weight: 760; letter-spacing: -.03em; text-transform: none; }
-.modal-close { border-radius: 10px; transition: color .2s ease, background .2s ease, transform .2s ease; }
-.modal-close:hover { transform: rotate(90deg); }
+.modal-close { border-radius: 10px; transition: color .2s ease, background .2s ease, border-color .2s ease; }
+.modal-close:hover { transform: none; background: rgba(255, 70, 85, .16); color: #ff7a84; }
 .form-group input, .form-group select, .form-group textarea { border-color: rgba(255,255,255,.11); border-radius: 10px; background: rgba(2,5,10,.36); transition: border-color .2s ease, box-shadow .2s ease, background .2s ease; }
 .form-group input:focus, .form-group select:focus, .form-group textarea:focus { background: rgba(var(--accent-rgb), .045); }
 fieldset, .advanced-settings { border-color: rgba(255,255,255,.1); border-radius: 12px; }
