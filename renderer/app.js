@@ -97,6 +97,8 @@ function applyMotionPreference() {
     }
 }
 
+let mousePos = { x: -1000, y: -1000 };
+
 function initCanvas() {
     const canvas = $('bgCanvas');
     if (!canvas) return;
@@ -143,6 +145,22 @@ function animateCanvas() {
         if (particle.x > canvas.width) particle.x = 0;
         if (particle.y < 0) particle.y = canvas.height;
         if (particle.y > canvas.height) particle.y = 0;
+        
+        if (mousePos.x > 0) {
+            const mdx = particle.x - mousePos.x;
+            const mdy = particle.y - mousePos.y;
+            const mdist = Math.hypot(mdx, mdy);
+            if (mdist < 140) {
+                const mforce = (1 - mdist / 140) * 0.35;
+                context.strokeStyle = `rgba(${color}, ${mforce * 0.45})`;
+                context.lineWidth = 0.8;
+                context.beginPath();
+                context.moveTo(particle.x, particle.y);
+                context.lineTo(mousePos.x, mousePos.y);
+                context.stroke();
+            }
+        }
+        
         const alpha = particle.alpha * (.78 + Math.sin(particle.phase) * .22);
         context.shadowColor = `rgba(${color}, ${alpha})`;
         context.shadowBlur = 8 + particle.size * 2;
@@ -366,6 +384,27 @@ function iconSvg(kind) {
     return `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[kind]}</svg>`;
 }
 
+function getRankClass(rank) {
+    if (!rank) return 'rank-unranked';
+    const r = rank.toLowerCase();
+    if (r.includes('radiante') || r.includes('challenger')) return 'rank-radiant';
+    if (r.includes('inmortal') || r.includes('gran máster') || r.includes('grandmaster')) return 'rank-immortal';
+    if (r.includes('ascendente') || r.includes('máster') || r.includes('master')) return 'rank-ascendant';
+    if (r.includes('diamante')) return 'rank-diamond';
+    if (r.includes('esmeralda')) return 'rank-emerald';
+    if (r.includes('platino')) return 'rank-platinum';
+    if (r.includes('oro')) return 'rank-gold';
+    if (r.includes('plata')) return 'rank-silver';
+    if (r.includes('bronce')) return 'rank-bronze';
+    if (r.includes('hierro')) return 'rank-iron';
+    return 'rank-unranked';
+}
+
+function getAvatarKey(account) {
+    if (account.avatarAgent) return account.avatarAgent.toLowerCase();
+    return account.game === 'league_of_legends' ? 'ahri' : 'jett';
+}
+
 function renderAccounts() {
     const query = elements.searchInput.value.trim().toLowerCase();
     const counts = {
@@ -414,13 +453,22 @@ function renderAccounts() {
         card.setAttribute('aria-label', `${account.displayName}, ${GAME_LABELS[account.game] || 'Riot'}`);
         const gameLabel = account.game === 'league_of_legends' ? 'LEAGUE OF LEGENDS' : 'VALORANT';
         const defaultPlayLabel = account.game === 'league_of_legends' ? '▶ Jugar LoL' : '▶ Jugar Valorant';
+        const avatarKey = getAvatarKey(account);
+        const avatarInitials = (account.avatarAgent || (account.game === 'league_of_legends' ? 'LoL' : 'Val')).slice(0, 2).toUpperCase();
         card.innerHTML = `
             <div class="account-main">
-                <div class="account-avatar">${account.game === 'league_of_legends' ? 'L' : 'V'}</div>
+                <div class="account-avatar avatar-${escapeHtml(avatarKey)}" title="${escapeHtml(account.avatarAgent || (account.game === 'league_of_legends' ? 'LoL' : 'Valorant'))}">
+                    <span>${avatarInitials}</span>
+                </div>
                 <div class="account-copy">
                     <div class="account-topline"><h3>${escapeHtml(account.displayName)} ${account.isFavorite ? '<span class="favorite-mark" aria-label="Favorita">◆</span>' : ''}</h3><span class="game-badge">${gameLabel}</span>${isCurrent ? '<span class="current-badge">ACTIVA</span>' : ''}</div>
                     <span class="account-id">${escapeHtml(account.riotId || 'Riot ID sin configurar')}</span>
-                    <div class="meta-row"><span class="meta-chip">${escapeHtml(account.region)}</span><span class="meta-chip">${escapeHtml(account.rank || 'Sin rango')}</span><span class="meta-chip">${escapeHtml(formatRelative(account.lastUsedAt))}</span>${account.level ? `<span class="meta-chip">${escapeHtml(account.level)}</span>` : ''}</div>
+                    <div class="meta-row">
+                        <span class="meta-chip meta-region">${escapeHtml(account.region)}</span>
+                        <span class="meta-chip meta-rank ${getRankClass(account.rank)}"><span class="rank-dot"></span>${escapeHtml(account.rank || 'Sin rango')}</span>
+                        <span class="meta-chip meta-time">${escapeHtml(formatRelative(account.lastUsedAt))}</span>
+                        ${account.level ? `<span class="meta-chip meta-level">Nvl. ${escapeHtml(account.level)}</span>` : ''}
+                    </div>
                 </div>
             </div>
             <div class="account-actions">
@@ -896,6 +944,14 @@ function bindEvents() {
         if (!event.target.closest('.play-group')) {
             document.querySelectorAll('.play-menu').forEach((menu) => menu.classList.add('hidden'));
         }
+    });
+    window.addEventListener('mousemove', (event) => {
+        mousePos.x = event.clientX;
+        mousePos.y = event.clientY;
+    });
+    window.addEventListener('mouseleave', () => {
+        mousePos.x = -1000;
+        mousePos.y = -1000;
     });
     window.addEventListener('resize', initCanvas);
 }
