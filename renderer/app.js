@@ -443,8 +443,8 @@ function getRankClass(rank) {
 }
 
 function getRankAsset(game, rank) {
-    if (!rank || rank.toLowerCase().includes('sin rango')) {
-        return 'assets/ranks/valorant/unranked.svg';
+    if (!rank || rank.toLowerCase().includes('sin rango') || rank.toLowerCase().includes('unranked')) {
+        return 'assets/ranks/unranked.svg';
     }
     const r = rank.toLowerCase();
     if (game === 'league_of_legends') {
@@ -458,7 +458,7 @@ function getRankAsset(game, rank) {
         if (r.includes('plata') || r.includes('silver')) return 'assets/ranks/lol/silver.png';
         if (r.includes('bronce') || r.includes('bronze')) return 'assets/ranks/lol/bronze.png';
         if (r.includes('hierro') || r.includes('iron')) return 'assets/ranks/lol/iron.png';
-        return 'assets/ranks/valorant/unranked.svg';
+        return 'assets/ranks/unranked.svg';
     }
 
     let tierNum = '1';
@@ -475,7 +475,7 @@ function getRankAsset(game, rank) {
     if (r.includes('bronce') || r.includes('bronze')) return `assets/ranks/valorant/bronze${tierNum}.svg`;
     if (r.includes('hierro') || r.includes('iron')) return `assets/ranks/valorant/iron${tierNum}.svg`;
 
-    return 'assets/ranks/valorant/unranked.svg';
+    return 'assets/ranks/unranked.svg';
 }
 
 function getAvatarKey(account) {
