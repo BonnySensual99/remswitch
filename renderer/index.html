@@ -102,8 +102,12 @@
             <section class="command-bar" aria-label="Filtros de cuentas">
                 <div class="game-tabs" id="gameTabs">
                     <button class="game-tab active" data-game="all" type="button">Todas <span id="countAll">0</span></button>
-                    <button class="game-tab" data-game="league_of_legends" type="button"><i class="game-mark lol">L</i> LoL <span id="countLol">0</span></button>
-                    <button class="game-tab" data-game="valorant" type="button"><i class="game-mark val">V</i> Valorant <span id="countVal">0</span></button>
+                    <button class="game-tab" data-game="league_of_legends" type="button">
+                        <span class="tab-game-icon lol-icon"><svg viewBox="0 0 100 100"><path fill="currentColor" d="M22 14h18v54h32v18H22V14zm58 10v40l-14-8V24h14z"/></svg></span> LoL <span id="countLol">0</span>
+                    </button>
+                    <button class="game-tab" data-game="valorant" type="button">
+                        <span class="tab-game-icon val-icon"><svg viewBox="0 0 100 100"><path fill="currentColor" d="M38.8 84.7L0 23.5h22.6l27.5 43.6-11.3 17.6zm17.4-61.2L94.9 84.7H72.3L44.8 41.1l11.4-17.6z"/></svg></span> Valorant <span id="countVal">0</span>
+                    </button>
                 </div>
                 <div class="command-actions">
                     <label class="search-box" for="searchInput">

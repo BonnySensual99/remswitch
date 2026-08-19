@@ -320,6 +320,35 @@ function renderDashboard() {
     renderQuickSwitch();
 }
 
+const GAME_LOGOS = {
+    valorant: `<svg class="game-logo-svg" viewBox="0 0 100 100" aria-hidden="true"><path fill="currentColor" d="M38.8 84.7L0 23.5h22.6l27.5 43.6-11.3 17.6zm17.4-61.2L94.9 84.7H72.3L44.8 41.1l11.4-17.6z"/></svg>`,
+    league_of_legends: `<svg class="game-logo-svg" viewBox="0 0 100 100" aria-hidden="true"><path fill="currentColor" d="M22 14h18v54h32v18H22V14zm58 10v40l-14-8V24h14z"/><path fill="currentColor" opacity="0.65" d="M66 24h14l-14 14V24z"/></svg>`,
+    riot: `<svg class="game-logo-svg" viewBox="0 0 100 100" aria-hidden="true"><path fill="currentColor" d="M78.6 22.3l-18.7 7.1 5 10.9 15.1-5.8 7.5 5.8-7.9 17.9L21.4 79.9 11.2 57.8l51.7-19.6-3.3-7.5L8.1 49.7 3.1 30.5l57.5-21.7 7.5 5.8-7.9 17.5 15.1-5.8 6.3 8.8-7.5 17.5 7.5-2.9.8-2.5-8.3-32.4z"/></svg>`
+};
+
+const RANK_ICONS = {
+    radiant: `<svg class="rank-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2l2.4 5.4 5.6.8-4 4 1 5.8-5-2.8-5 2.8 1-5.8-4-4 5.6-.8L12 2zm0 4.2L10.5 9l-3.5.5 2.5 2.5-.6 3.6 3.1-1.7 3.1 1.7-.6-3.6 2.5-2.5-3.5-.5L12 6.2z"/><circle cx="12" cy="11.5" r="1.8" fill="#fff"/></svg>`,
+    immortal: `<svg class="rank-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2L4 7v6c0 5 3.5 9.7 8 11 4.5-1.3 8-6 8-11V7l-8-5zm0 3.2l5.5 3.5v4.5c0 3.6-2.4 7-5.5 8-3.1-1-5.5-4.4-5.5-8V8.7L12 5.2zm0 3l-3.5 3.5L12 16l3.5-4.3L12 8.2z"/></svg>`,
+    ascendant: `<svg class="rank-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2L2 9l3 11h14l3-11-10-7zm0 3.8l6.5 4.6-2 7.6H7.5l-2-7.6L12 5.8zm0 3.4l-3 4.2h6l-3-4.2z"/></svg>`,
+    diamond: `<svg class="rank-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 3h12l4 6-10 12L2 9l4-6zm1.5 2l-2.7 4h14.4l-2.7-4H7.5zm-3.2 6l7.7 9.2 7.7-9.2H4.3z"/></svg>`,
+    emerald: `<svg class="rank-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2l8 5v10l-8 5-8-5V7l8-5zm0 3.2L6 8.5v7l6 3.8 6-3.8v-7L12 5.2z"/><path fill="currentColor" opacity="0.7" d="M12 7l4 2.8v4.4L12 17l-4-2.8V9.8L12 7z"/></svg>`,
+    platinum: `<svg class="rank-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2l7 7-7 13L5 9l7-7zm0 4.2L8.2 9.5 12 17l3.8-7.5L12 6.2z"/></svg>`,
+    gold: `<svg class="rank-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2L4 6v6c0 5 3.5 9.7 8 11 4.5-1.3 8-6 8-11V6l-8-4zm0 3.2l5.5 2.8v4.2c0 3.6-2.4 7-5.5 8-3.1-1-5.5-4.4-5.5-8V8l5.5-2.8zm0 3.8l-3 3h6l-3-3z"/></svg>`,
+    silver: `<svg class="rank-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3L5 7v6c0 4.5 3 8.7 7 10 4-1.3 7-5.5 7-10V7l-7-4zm0 3.3L16.5 9v4.2c0 2.8-1.9 5.5-4.5 6.4-2.6-.9-4.5-3.6-4.5-6.4V9L12 6.3z"/></svg>`,
+    bronze: `<svg class="rank-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3l-6 4v5c0 4 2.5 7.8 6 9 3.5-1.2 6-5 6-9V7l-6-4zm0 3.5l4 2.7v3.5c0 2.3-1.4 4.5-4 5.3-2.6-.8-4-3-4-5.3V9.2l4-2.7z"/></svg>`,
+    iron: `<svg class="rank-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 4h12l2 4v8l-2 4H6l-2-4V8l2-4zm1.5 2.5L6 8.5v7l1.5 2h9l1.5-2v-7l-1.5-2h-9z"/></svg>`,
+    unranked: `<svg class="rank-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3 3"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>`
+};
+
+function getGameLogoSvg(game) {
+    return GAME_LOGOS[game] || GAME_LOGOS.valorant;
+}
+
+function getRankIconSvg(rank) {
+    const cls = getRankClass(rank).replace('rank-', '');
+    return RANK_ICONS[cls] || RANK_ICONS.unranked;
+}
+
 function renderQuickSwitch() {
     const list = $('quickSwitchList');
     if (!list) return;
@@ -341,7 +370,7 @@ function renderQuickSwitch() {
         item.type = 'button';
         item.disabled = Boolean(activeRequestId) || isCurrent;
         item.setAttribute('aria-label', isCurrent ? `${account.displayName}, sesión activa` : `Cambiar a ${account.displayName}`);
-        item.innerHTML = `<span class="quick-game game-${account.game}">${account.game === 'league_of_legends' ? 'L' : 'V'}</span><span class="quick-copy"><strong>${escapeHtml(account.displayName)}</strong><small>${escapeHtml(account.riotId || account.region || 'Riot ID sin configurar')}</small></span><span class="quick-action" aria-hidden="true">${isCurrent ? 'ACTIVA' : '→'}</span>`;
+        item.innerHTML = `<span class="quick-game game-${account.game}">${getGameLogoSvg(account.game)}</span><span class="quick-copy"><strong>${escapeHtml(account.displayName)}</strong><small>${escapeHtml(account.riotId || account.region || 'Riot ID sin configurar')}</small></span><span class="quick-action" aria-hidden="true">${isCurrent ? 'ACTIVA' : '→'}</span>`;
         item.addEventListener('click', () => beginSwitch(account));
         list.append(item);
     }
@@ -361,8 +390,8 @@ function renderActivity() {
         const item = document.createElement('div');
         item.className = 'activity-item';
         const icon = document.createElement('span');
-        icon.className = 'activity-icon';
-        icon.textContent = entry.game === 'league_of_legends' ? 'L' : 'V';
+        icon.className = `activity-icon game-${entry.game}`;
+        icon.innerHTML = getGameLogoSvg(entry.game);
         const copy = document.createElement('div');
         const title = document.createElement('strong');
         title.textContent = entry.text || 'Sesión confirmada';
@@ -452,7 +481,8 @@ function renderAccounts() {
         card.className = `account-card game-${account.game}${isCurrent ? ' is-current' : ''}`;
         card.setAttribute('aria-label', `${account.displayName}, ${GAME_LABELS[account.game] || 'Riot'}`);
         const gameLabel = account.game === 'league_of_legends' ? 'LEAGUE OF LEGENDS' : 'VALORANT';
-        const defaultPlayLabel = account.game === 'league_of_legends' ? '▶ Jugar LoL' : '▶ Jugar Valorant';
+        const defaultGame = account.game === 'league_of_legends' ? 'league_of_legends' : 'valorant';
+        const defaultPlayLabel = account.game === 'league_of_legends' ? 'Jugar LoL' : 'Jugar Valorant';
         const avatarKey = getAvatarKey(account);
         const avatarInitials = (account.avatarAgent || (account.game === 'league_of_legends' ? 'LoL' : 'Val')).slice(0, 2).toUpperCase();
         card.innerHTML = `
@@ -461,11 +491,15 @@ function renderAccounts() {
                     <span>${avatarInitials}</span>
                 </div>
                 <div class="account-copy">
-                    <div class="account-topline"><h3>${escapeHtml(account.displayName)} ${account.isFavorite ? '<span class="favorite-mark" aria-label="Favorita">◆</span>' : ''}</h3><span class="game-badge">${gameLabel}</span>${isCurrent ? '<span class="current-badge">ACTIVA</span>' : ''}</div>
+                    <div class="account-topline">
+                        <h3>${escapeHtml(account.displayName)} ${account.isFavorite ? '<span class="favorite-mark" aria-label="Favorita">◆</span>' : ''}</h3>
+                        <span class="game-badge">${getGameLogoSvg(account.game)} ${gameLabel}</span>
+                        ${isCurrent ? '<span class="current-badge">ACTIVA</span>' : ''}
+                    </div>
                     <span class="account-id">${escapeHtml(account.riotId || 'Riot ID sin configurar')}</span>
                     <div class="meta-row">
                         <span class="meta-chip meta-region">${escapeHtml(account.region)}</span>
-                        <span class="meta-chip meta-rank ${getRankClass(account.rank)}"><span class="rank-dot"></span>${escapeHtml(account.rank || 'Sin rango')}</span>
+                        <span class="meta-chip meta-rank ${getRankClass(account.rank)}">${getRankIconSvg(account.rank)}<span>${escapeHtml(account.rank || 'Sin rango')}</span></span>
                         <span class="meta-chip meta-time">${escapeHtml(formatRelative(account.lastUsedAt))}</span>
                         ${account.level ? `<span class="meta-chip meta-level">Nvl. ${escapeHtml(account.level)}</span>` : ''}
                     </div>
@@ -476,12 +510,14 @@ function renderAccounts() {
                 <button class="card-action edit" type="button" aria-label="Editar cuenta" title="Editar cuenta">${iconSvg('edit')}</button>
                 <button class="card-action delete" type="button" aria-label="Eliminar cuenta" title="Eliminar cuenta">${iconSvg('trash')}</button>
                 <div class="play-group">
-                    <button class="play-btn" type="button"${isCurrent ? ' disabled data-current="true"' : ''}>${isCurrent ? 'En uso' : defaultPlayLabel}</button>
+                    <button class="play-btn" type="button"${isCurrent ? ' disabled data-current="true"' : ''}>
+                        ${isCurrent ? 'En uso' : `${getGameLogoSvg(defaultGame)} <span>${defaultPlayLabel}</span>`}
+                    </button>
                     <button class="play-btn-drop" type="button" aria-label="Más opciones de juego" title="Opciones de inicio"${isCurrent ? ' disabled data-current="true"' : ''}>▾</button>
                     <div class="play-menu hidden">
-                        <button class="play-menu-item opt-val" type="button"><span class="game-dot val"></span> Jugar Valorant</button>
-                        <button class="play-menu-item opt-lol" type="button"><span class="game-dot lol"></span> Jugar League of Legends</button>
-                        <button class="play-menu-item opt-riot" type="button"><span class="game-dot riot"></span> Solo abrir Riot Client</button>
+                        <button class="play-menu-item opt-val" type="button">${getGameLogoSvg('valorant')} <span>Jugar Valorant</span></button>
+                        <button class="play-menu-item opt-lol" type="button">${getGameLogoSvg('league_of_legends')} <span>Jugar League of Legends</span></button>
+                        <button class="play-menu-item opt-riot" type="button">${getGameLogoSvg('riot')} <span>Solo abrir Riot Client</span></button>
                     </div>
                 </div>
             </div>`;

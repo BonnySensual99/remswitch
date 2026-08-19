@@ -307,11 +307,78 @@ body[data-view="accounts"] .dashboard-brief { display: none; }
 .avatar-thresh { background: linear-gradient(135deg, #065f46, #2dd4bf); color: #fff; border-color: #5eead4; }
 .avatar-akali { background: linear-gradient(135deg, #15803d, #22c55e); color: #fff; border-color: #86efac; }
 .avatar-ekko { background: linear-gradient(135deg, #0284c7, #a3e635); color: #082f49; border-color: #bef264; }
+.rank-svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 3px currentColor);
+}
+.game-logo-svg {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+    vertical-align: middle;
+    display: inline-block;
+}
+.play-btn {
+    min-width: 110px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: 1px solid rgba(var(--accent-rgb), .7);
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    background: rgba(var(--accent-rgb), .12);
+    color: var(--accent-2);
+    cursor: pointer;
+    font-family: "Segoe UI Variable", "Segoe UI", sans-serif;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .04em;
+}
+.play-btn .game-logo-svg {
+    width: 15px;
+    height: 15px;
+}
+.game-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.game-badge .game-logo-svg {
+    width: 10px;
+    height: 10px;
+}
+.tab-game-icon {
+    width: 13px;
+    height: 13px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 4px;
+}
+.tab-game-icon svg {
+    width: 100%;
+    height: 100%;
+}
+.tab-game-icon.val-icon { color: #ff4655; }
+.tab-game-icon.lol-icon { color: #d3a84f; }
+.quick-game .game-logo-svg {
+    width: 18px;
+    height: 18px;
+}
+.activity-icon .game-logo-svg {
+    width: 12px;
+    height: 12px;
+}
 .account-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; }
 .card-action { width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,.035); color: var(--muted); cursor: pointer; display: grid; place-items: center; }
 .card-action:hover { color: var(--text); border-color: var(--accent); }
 .play-group { position: relative; display: flex; align-items: stretch; }
-.play-btn { min-width: 105px; height: 38px; border: 1px solid rgba(var(--accent-rgb), .7); border-top-left-radius: 8px; border-bottom-left-radius: 8px; border-top-right-radius: 0; border-bottom-right-radius: 0; background: rgba(var(--accent-rgb), .12); color: var(--accent-2); cursor: pointer; font-family: "Segoe UI Variable", "Segoe UI", sans-serif; font-size: 11px; font-weight: 800; letter-spacing: .04em; }
 .play-btn:hover { background: var(--accent); color: #fff; }
 .play-btn-drop { width: 28px; border: 1px solid rgba(var(--accent-rgb), .7); border-left: 0; border-top-right-radius: 8px; border-bottom-right-radius: 8px; background: rgba(var(--accent-rgb), .18); color: var(--accent-2); cursor: pointer; display: grid; place-items: center; font-size: 13px; transition: background .15s ease, color .15s ease; }
 .play-btn-drop:hover { background: var(--accent); color: #fff; }
