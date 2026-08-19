@@ -23,10 +23,27 @@
     "directories": {
       "output": "release"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "BonnySensual99",
+        "repo": "remswitch"
+      }
+    ],
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64"] },
-        { "target": "portable", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "icon": "build/icon.ico",
       "signAndEditExecutable": true
@@ -57,15 +74,26 @@
       {
         "from": "native/",
         "to": "native",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ]
   },
-  "keywords": ["remswitcher", "valorant", "league-of-legends", "account-manager", "riot-games"],
+  "keywords": [
+    "remswitcher",
+    "valorant",
+    "league-of-legends",
+    "account-manager",
+    "riot-games"
+  ],
   "author": "Antigravity",
   "license": "MIT",
   "devDependencies": {
     "electron": "43.4.0",
     "electron-builder": "26.15.3"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
   }
 }

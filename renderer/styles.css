@@ -259,6 +259,10 @@ fieldset legend { padding: 0 6px; color: var(--accent); font-size: 9px; font-wei
 .switch-row strong { font-size: 11px; }
 .switch-row small { color: var(--muted); margin-top: 2px; font-size: 9px; }
 .switch-row input { width: 34px; height: 18px; accent-color: var(--accent); }
+.update-row { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 6px 0; }
+.update-row strong { font-size: 11px; }
+.update-row small { color: var(--muted); margin-top: 2px; font-size: 9px; }
+.update-actions { display: flex; align-items: center; gap: 8px; }
 .advanced-settings { border: 1px solid var(--line); border-radius: 10px; padding: 0 12px 12px; }
 .advanced-settings summary { padding: 12px 0; cursor: pointer; color: #c6ceda; font-size: 11px; font-weight: 800; }
 .test-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; color: var(--muted); font-size: 10px; }

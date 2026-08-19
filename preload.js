@@ -19,6 +19,16 @@ contextBridge.exposeInMainWorld('api', Object.freeze({
     getUserProfile: () => ipcRenderer.invoke('get-user-profile'),
     saveUserProfile: (profile) => ipcRenderer.invoke('save-user-profile', profile),
 
+    getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+    checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+    installUpdate: () => ipcRenderer.invoke('install-update'),
+    onUpdateStatus: (callback) => {
+        if (typeof callback !== 'function') return () => {};
+        const listener = (_event, payload) => callback(payload);
+        ipcRenderer.on('update-status', listener);
+        return () => ipcRenderer.removeListener('update-status', listener);
+    },
+
     minimizeWindow: () => ipcRenderer.send('window-minimize'),
     closeWindow: () => ipcRenderer.send('window-close'),
 

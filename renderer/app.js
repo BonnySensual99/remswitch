@@ -659,6 +659,9 @@ async function openSettings() {
     }
     try {
         settings = await rendererApi.getSettings();
+        if (rendererApi.getAppVersion) {
+            rendererApi.getAppVersion().then((v) => { if (v) $('appVersionLabel').textContent = v; }).catch(() => {});
+        }
         $('setStartWithWindows').checked = settings.startWithWindows;
         $('setMinimizeToTray').checked = settings.minimizeToTray;
         $('setCloseOnLaunch').checked = settings.closeOnLaunch;
@@ -673,6 +676,31 @@ async function openSettings() {
         $('testRiotStatus').textContent = '';
         showModal(elements.settingsModal);
     } catch (error) { showToast(error.message || 'No se pudieron cargar los ajustes.', 'error'); }
+}
+
+async function checkForUpdates() {
+    if (!rendererApi?.checkForUpdates) return;
+    $('btnCheckUpdates').disabled = true;
+    $('updateStatusText').textContent = 'Buscando actualizaciones…';
+    try {
+        const res = await rendererApi.checkForUpdates();
+        if (res.status === 'dev-mode') {
+            $('updateStatusText').textContent = res.message || 'Modo desarrollo (sin actualizaciones empaquetadas).';
+        } else if (res.status === 'error') {
+            $('updateStatusText').textContent = res.message || 'Error al buscar actualizaciones.';
+        }
+    } catch (err) {
+        $('updateStatusText').textContent = err.message || 'Error al buscar actualizaciones.';
+    } finally {
+        $('btnCheckUpdates').disabled = false;
+    }
+}
+
+async function installUpdate() {
+    if (!rendererApi?.installUpdate) return;
+    $('btnInstallUpdate').disabled = true;
+    $('updateStatusText').textContent = 'Reiniciando para instalar la actualización…';
+    await rendererApi.installUpdate();
 }
 
 async function saveSettings(event) {
@@ -776,6 +804,8 @@ function bindEvents() {
     $('settingsForm').addEventListener('submit', saveSettings);
     $('profileForm').addEventListener('submit', saveProfile);
     $('btnTestRiot').addEventListener('click', testRiotClient);
+    $('btnCheckUpdates').addEventListener('click', checkForUpdates);
+    $('btnInstallUpdate').addEventListener('click', installUpdate);
     $('accGame').addEventListener('change', () => updateGameFields($('accGame').value));
     $('btnTogglePass').addEventListener('click', () => {
         const input = $('accPassword');
@@ -847,6 +877,27 @@ async function initialize() {
         setSwitchControlsDisabled(Boolean(activeRequestId));
         if (activeRequestId) showSwitchOverlay('valorant', accounts[0] || null);
         rendererApi.onSwitchState(updateSwitchState);
+        if (rendererApi.onUpdateStatus) {
+            rendererApi.onUpdateStatus((payload) => {
+                if (!payload) return;
+                if (payload.status === 'checking') {
+                    $('updateStatusText').textContent = 'Buscando actualizaciones…';
+                } else if (payload.status === 'available') {
+                    $('updateStatusText').textContent = `Nueva versión ${payload.version ? `v${payload.version}` : ''} disponible. Descargando…`;
+                    showToast(`Nueva versión ${payload.version ? `v${payload.version}` : ''} disponible. Descargando…`);
+                } else if (payload.status === 'downloading') {
+                    $('updateStatusText').textContent = `Descargando actualización: ${payload.percent || 0}%`;
+                } else if (payload.status === 'downloaded') {
+                    $('updateStatusText').textContent = `Versión ${payload.version ? `v${payload.version}` : ''} lista para instalar.`;
+                    $('btnInstallUpdate').classList.remove('hidden');
+                    showToast('Actualización lista. Puedes reiniciar para instalarla.', 'success');
+                } else if (payload.status === 'not-available') {
+                    $('updateStatusText').textContent = 'Tienes la versión más reciente.';
+                } else if (payload.status === 'error') {
+                    $('updateStatusText').textContent = payload.message || 'Error en actualizaciones.';
+                }
+            });
+        }
     } catch (error) {
         elements.statusBar.classList.add('error');
         elements.statusText.textContent = 'No se pudieron cargar los datos locales.';

@@ -1,4 +1,5 @@
 const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, safeStorage, session } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -513,6 +514,59 @@ function setupTray() {
     updateTrayMenu();
 }
 
+function emitUpdateStatus(payload) {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('update-status', payload);
+    }
+}
+
+function setupAutoUpdater() {
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = true;
+
+    autoUpdater.on('checking-for-update', () => {
+        log('INFO', 'AutoUpdater: Buscando actualizaciones...');
+        emitUpdateStatus({ status: 'checking', message: 'Buscando actualizaciones...' });
+    });
+
+    autoUpdater.on('update-available', (info) => {
+        log('INFO', `AutoUpdater: Actualización disponible v${info?.version || ''}`);
+        emitUpdateStatus({
+            status: 'available',
+            version: info?.version,
+            message: `Descargando actualización v${info?.version || ''}...`
+        });
+    });
+
+    autoUpdater.on('update-not-available', () => {
+        log('INFO', 'AutoUpdater: La aplicación está al día.');
+        emitUpdateStatus({ status: 'not-available', message: 'Tienes la versión más reciente.' });
+    });
+
+    autoUpdater.on('error', (err) => {
+        log('WARN', `AutoUpdater error: ${err?.message || err}`);
+        emitUpdateStatus({ status: 'error', message: err?.message || 'Error al buscar actualizaciones.' });
+    });
+
+    autoUpdater.on('download-progress', (progressObj) => {
+        const percent = Math.round(progressObj.percent || 0);
+        emitUpdateStatus({
+            status: 'downloading',
+            percent,
+            message: `Descargando actualización: ${percent}%`
+        });
+    });
+
+    autoUpdater.on('update-downloaded', (info) => {
+        log('INFO', `AutoUpdater: Descarga completada v${info?.version || ''}`);
+        emitUpdateStatus({
+            status: 'downloaded',
+            version: info?.version,
+            message: `Versión v${info?.version || ''} descargada y lista para instalar.`
+        });
+    });
+}
+
 function registerPackagedSmokeIpc() {
     const accounts = [{
         id: 'packaged-smoke-account', displayName: 'Operador EU', game: 'valorant', region: 'EU',
@@ -536,6 +590,9 @@ function registerPackagedSmokeIpc() {
     ipcMain.handle('get-activity-log', () => []);
     ipcMain.handle('get-user-profile', () => ({ username: '', createdAt: 0 }));
     ipcMain.handle('get-settings', () => settings);
+    ipcMain.handle('get-app-version', () => '1.0.1');
+    ipcMain.handle('check-for-updates', () => ({ status: 'dev-mode', message: 'Modo de prueba' }));
+    ipcMain.handle('install-update', () => ({ scheduled: true }));
     ipcMain.handle('get-runtime-status', () => ({
         riotClientFound: true,
         riotSignatureValid: true,
@@ -693,6 +750,23 @@ function registerIpc() {
         return profile;
     });
 
+    handle('get-app-version', () => app.getVersion());
+    handle('check-for-updates', async () => {
+        if (!app.isPackaged) {
+            return { status: 'dev-mode', message: 'Las actualizaciones automáticas solo funcionan en la versión empaquetada.' };
+        }
+        try {
+            const result = await autoUpdater.checkForUpdates();
+            return { status: 'ok', updateInfo: result?.updateInfo || null };
+        } catch (error) {
+            return { status: 'error', message: error.message };
+        }
+    });
+    handle('install-update', () => {
+        autoUpdater.quitAndInstall(false, true);
+        return { scheduled: true };
+    });
+
     ipcMain.on('window-minimize', (event) => { assertTrustedSender(event); mainWindow?.minimize(); });
     ipcMain.on('window-close', (event) => { assertTrustedSender(event); mainWindow?.close(); });
 }
@@ -721,6 +795,12 @@ if (!gotTheLock) {
         session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
         createWindow();
         setupTray();
+        setupAutoUpdater();
+        if (app.isPackaged) {
+            setTimeout(() => {
+                autoUpdater.checkForUpdates().catch(() => {});
+            }, 6000);
+        }
         const settings = normalizeSettings(store.loadSettings(), DEFAULT_SETTINGS);
         app.setLoginItemSettings({ openAtLogin: settings.startWithWindows, path: process.execPath });
     });
