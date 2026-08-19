@@ -13,7 +13,7 @@ contextBridge.exposeInMainWorld('api', Object.freeze({
     openRiotClient: () => ipcRenderer.invoke('open-riot-client'),
 
     importActiveSession: () => ipcRenderer.invoke('import-active-session'),
-    startPlay: (accountId) => ipcRenderer.invoke('start-play', { accountId }),
+    startPlay: (accountId, targetGame) => ipcRenderer.invoke('start-play', { accountId, targetGame }),
 
     getActivityLog: () => ipcRenderer.invoke('get-activity-log'),
     getUserProfile: () => ipcRenderer.invoke('get-user-profile'),

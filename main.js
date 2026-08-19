@@ -259,13 +259,13 @@ function getSwitchErrorState(error) {
     return 'Error';
 }
 
-async function startAccountSwitch(accountId, requestId) {
-    const payloadBase = { requestId, game: 'valorant' };
+async function startAccountSwitch(accountId, requestId, targetGame = null) {
+    const payloadBase = { requestId, accountId };
     try {
         const accounts = store.loadAccounts();
         const account = accounts.find((item) => item.id === accountId);
         if (!account) throw Object.assign(new Error('La cuenta ya no existe.'), { code: 'ACCOUNT_NOT_FOUND' });
-        payloadBase.game = account.game;
+        payloadBase.game = targetGame === 'none' ? 'riot' : (targetGame || account.game || 'valorant');
         const settings = normalizeSettings(store.loadSettings(), DEFAULT_SETTINGS);
 
         emitSwitch({ ...payloadBase, state: 'CheckingRiotClient', message: 'Comprobando Riot Client…' });
@@ -307,9 +307,12 @@ async function startAccountSwitch(accountId, requestId) {
         });
 
         await waitForAuthenticatedSession(account, payloadBase);
-        if (settings.autoLaunchGame) {
-            emitSwitch({ ...payloadBase, state: 'LaunchingGame', message: account.game === 'league_of_legends' ? 'Iniciando League of Legends…' : 'Iniciando VALORANT…' });
-            await launchDetached(riotPath, GAME_ARGS[account.game]);
+        
+        const effectiveGame = targetGame === 'none' ? null : (targetGame || (settings.autoLaunchGame ? (account.game || 'valorant') : null));
+        if (effectiveGame && GAME_ARGS[effectiveGame]) {
+            const gameLabel = effectiveGame === 'league_of_legends' ? 'League of Legends' : 'VALORANT';
+            emitSwitch({ ...payloadBase, state: 'LaunchingGame', message: `Iniciando ${gameLabel}…` });
+            await launchDetached(riotPath, GAME_ARGS[effectiveGame]);
         }
 
         const now = Math.floor(Date.now() / 1000);
@@ -320,10 +323,24 @@ async function startAccountSwitch(accountId, requestId) {
             store.saveAccounts(latestAccounts);
         }
         const activity = store.loadActivity();
-        activity.unshift({ id: crypto.randomUUID(), accountId: account.id, game: account.game, text: `Sesión iniciada en ${account.displayName}`, occurredAt: now, success: true });
+        const activityGame = effectiveGame || account.game || 'valorant';
+        activity.unshift({
+            id: crypto.randomUUID(),
+            accountId: account.id,
+            game: activityGame,
+            text: effectiveGame
+                ? `Sesión en ${account.displayName} · ${effectiveGame === 'league_of_legends' ? 'LoL' : 'Valorant'}`
+                : `Sesión en ${account.displayName} · Riot Client`,
+            occurredAt: now,
+            success: true
+        });
         store.saveActivity(activity);
 
-        emitSwitch({ ...payloadBase, state: 'Done', message: settings.autoLaunchGame ? 'Cuenta lista. Juego iniciado.' : 'Cuenta autenticada correctamente.' });
+        emitSwitch({
+            ...payloadBase,
+            state: 'Done',
+            message: effectiveGame ? 'Cuenta lista. Juego iniciado.' : 'Cuenta autenticada en Riot Client.'
+        });
         updateTrayMenu();
         if (settings.closeOnLaunch) {
             app.isQuitting = true;
@@ -413,16 +430,56 @@ function updateTrayMenu(sessionInfo = null) {
         const isCurrent = activeRiotId && account.riotId && activeRiotId.toLowerCase() === account.riotId.toLowerCase();
         const prefix = isCurrent ? '● ' : '';
         const regionStr = account.region ? ` [${account.region}]` : '';
+        const defaultGameLabel = account.game === 'league_of_legends' ? 'LoL' : 'Valorant';
         return {
             label: `${prefix}${account.displayName}${regionStr}`,
-            enabled: !isBusy,
-            click: () => {
-                if (operationGate.activeRequestId) return;
-                const requestId = crypto.randomUUID();
-                operationGate.begin(requestId);
-                startAccountSwitch(account.id, requestId);
-                showMainWindow();
-            }
+            submenu: [
+                {
+                    label: `▶ Iniciar (${defaultGameLabel})`,
+                    enabled: !isBusy,
+                    click: () => {
+                        if (operationGate.activeRequestId) return;
+                        const requestId = crypto.randomUUID();
+                        operationGate.begin(requestId);
+                        startAccountSwitch(account.id, requestId, account.game || 'valorant');
+                        showMainWindow();
+                    }
+                },
+                { type: 'separator' },
+                {
+                    label: '🎮 Jugar Valorant',
+                    enabled: !isBusy,
+                    click: () => {
+                        if (operationGate.activeRequestId) return;
+                        const requestId = crypto.randomUUID();
+                        operationGate.begin(requestId);
+                        startAccountSwitch(account.id, requestId, 'valorant');
+                        showMainWindow();
+                    }
+                },
+                {
+                    label: '⚔️ Jugar League of Legends',
+                    enabled: !isBusy,
+                    click: () => {
+                        if (operationGate.activeRequestId) return;
+                        const requestId = crypto.randomUUID();
+                        operationGate.begin(requestId);
+                        startAccountSwitch(account.id, requestId, 'league_of_legends');
+                        showMainWindow();
+                    }
+                },
+                {
+                    label: '🔑 Solo abrir Riot Client',
+                    enabled: !isBusy,
+                    click: () => {
+                        if (operationGate.activeRequestId) return;
+                        const requestId = crypto.randomUUID();
+                        operationGate.begin(requestId);
+                        startAccountSwitch(account.id, requestId, 'none');
+                        showMainWindow();
+                    }
+                }
+            ]
         };
     }
 
@@ -730,13 +787,13 @@ function registerIpc() {
         };
     });
     handle('import-active-session', () => detectActiveRiotSession());
-    handle('start-play', ({ accountId } = {}) => {
+    handle('start-play', ({ accountId, targetGame } = {}) => {
         const id = String(accountId || '');
         if (!id) throw new Error('Cuenta no válida.');
         const requestId = crypto.randomUUID();
         const admission = operationGate.begin(requestId);
         if (!admission.accepted) return admission;
-        startAccountSwitch(id, requestId);
+        startAccountSwitch(id, requestId, targetGame);
         updateTrayMenu();
         return admission;
     });

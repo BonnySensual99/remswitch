@@ -25,7 +25,7 @@ test('la interfaz no carga fuentes ni scripts remotos y declara CSP', () => {
 });
 
 test('el renderer inicia operaciones únicamente mediante accountId', () => {
-    assert.match(js, /rendererApi\.startPlay\(account\.id\)/);
+    assert.match(js, /rendererApi\.startPlay\(account\.id/);
     assert.doesNotMatch(js, /encryptedPassword/);
 });
 

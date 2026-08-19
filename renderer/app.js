@@ -413,6 +413,7 @@ function renderAccounts() {
         card.className = `account-card game-${account.game}${isCurrent ? ' is-current' : ''}`;
         card.setAttribute('aria-label', `${account.displayName}, ${GAME_LABELS[account.game] || 'Riot'}`);
         const gameLabel = account.game === 'league_of_legends' ? 'LEAGUE OF LEGENDS' : 'VALORANT';
+        const defaultPlayLabel = account.game === 'league_of_legends' ? '▶ Jugar LoL' : '▶ Jugar Valorant';
         card.innerHTML = `
             <div class="account-main">
                 <div class="account-avatar">${account.game === 'league_of_legends' ? 'L' : 'V'}</div>
@@ -426,19 +427,51 @@ function renderAccounts() {
                 <button class="card-action favorite" type="button" aria-label="${account.isFavorite ? 'Quitar de favoritas' : 'Marcar favorita'}" title="${account.isFavorite ? 'Quitar de favoritas' : 'Marcar favorita'}">${iconSvg('star')}</button>
                 <button class="card-action edit" type="button" aria-label="Editar cuenta" title="Editar cuenta">${iconSvg('edit')}</button>
                 <button class="card-action delete" type="button" aria-label="Eliminar cuenta" title="Eliminar cuenta">${iconSvg('trash')}</button>
-                <button class="play-btn" type="button"${isCurrent ? ' disabled data-current="true"' : ''}>${isCurrent ? 'En uso' : 'Cambiar cuenta'}</button>
+                <div class="play-group">
+                    <button class="play-btn" type="button"${isCurrent ? ' disabled data-current="true"' : ''}>${isCurrent ? 'En uso' : defaultPlayLabel}</button>
+                    <button class="play-btn-drop" type="button" aria-label="Más opciones de juego" title="Opciones de inicio"${isCurrent ? ' disabled data-current="true"' : ''}>▾</button>
+                    <div class="play-menu hidden">
+                        <button class="play-menu-item opt-val" type="button"><span class="game-dot val"></span> Jugar Valorant</button>
+                        <button class="play-menu-item opt-lol" type="button"><span class="game-dot lol"></span> Jugar League of Legends</button>
+                        <button class="play-menu-item opt-riot" type="button"><span class="game-dot riot"></span> Solo abrir Riot Client</button>
+                    </div>
+                </div>
             </div>`;
         card.querySelector('.favorite').addEventListener('click', () => toggleFavorite(account));
         card.querySelector('.edit').addEventListener('click', () => openAccountModal(account));
         card.querySelector('.delete').addEventListener('click', () => deleteAccount(account));
-        card.querySelector('.play-btn').addEventListener('click', () => beginSwitch(account));
+        card.querySelector('.play-btn').addEventListener('click', () => beginSwitch(account, account.game || 'valorant'));
+        
+        const dropBtn = card.querySelector('.play-btn-drop');
+        const playMenu = card.querySelector('.play-menu');
+        dropBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const wasHidden = playMenu.classList.contains('hidden');
+            document.querySelectorAll('.play-menu').forEach((menu) => menu.classList.add('hidden'));
+            if (wasHidden) playMenu.classList.remove('hidden');
+        });
+        card.querySelector('.opt-val').addEventListener('click', (event) => {
+            event.stopPropagation();
+            playMenu.classList.add('hidden');
+            beginSwitch(account, 'valorant');
+        });
+        card.querySelector('.opt-lol').addEventListener('click', (event) => {
+            event.stopPropagation();
+            playMenu.classList.add('hidden');
+            beginSwitch(account, 'league_of_legends');
+        });
+        card.querySelector('.opt-riot').addEventListener('click', (event) => {
+            event.stopPropagation();
+            playMenu.classList.add('hidden');
+            beginSwitch(account, 'none');
+        });
         elements.accountsList.append(card);
     }
     setSwitchControlsDisabled(Boolean(activeRequestId));
 }
 
 function setSwitchControlsDisabled(disabled) {
-    document.querySelectorAll('.play-btn, .account-card .edit, .account-card .delete, #btnAdd, #btnQuickImport, #btnImport').forEach((button) => { button.disabled = disabled || button.dataset.current === 'true'; });
+    document.querySelectorAll('.play-btn, .play-btn-drop, .play-menu-item, .account-card .edit, .account-card .delete, #btnAdd, #btnQuickImport, #btnImport').forEach((button) => { button.disabled = disabled || button.dataset.current === 'true'; });
 }
 
 function setActiveNav(tabName) {
@@ -534,18 +567,22 @@ async function deleteAccount(account) {
     } catch (error) { showToast(error.message || 'No se pudo eliminar.', 'error'); }
 }
 
-async function beginSwitch(account) {
+async function beginSwitch(account, targetGame = null) {
     if (!rendererApi || activeRequestId) return;
     lastSwitchAccount = account;
+    const gameToLaunch = targetGame === 'none' ? 'none' : (targetGame || account.game || 'valorant');
+    const targetLabel = gameToLaunch === 'none'
+        ? 'Riot Client (sin abrir juego)'
+        : (gameToLaunch === 'league_of_legends' ? 'League of Legends' : 'VALORANT');
     if (settings?.confirmSwitch) {
-        const accepted = await confirmAction('Cambiar cuenta', `Riot Client se cerrará para iniciar “${account.displayName}” en ${GAME_LABELS[account.game]}.`, 'Iniciar cambio');
+        const accepted = await confirmAction('Cambiar cuenta', `Riot Client se cerrará para iniciar “${account.displayName}” y abrir ${targetLabel}.`, 'Iniciar cambio');
         if (!accepted) return;
     }
     try {
-        const result = await rendererApi.startPlay(account.id);
+        const result = await rendererApi.startPlay(account.id, gameToLaunch);
         if (!result.accepted) return showToast('Ya hay un cambio de cuenta en curso.', 'error');
         activeRequestId = result.requestId;
-        showSwitchOverlay(account.game, account);
+        showSwitchOverlay(gameToLaunch, account);
         setSwitchControlsDisabled(true);
         renderRuntime();
     } catch (error) {
@@ -854,7 +891,12 @@ function bindEvents() {
             else if (elements.switchOverlay.classList.contains('active') && !activeRequestId) closeSwitchOverlay();
         }
     });
-    document.addEventListener('click', addClickRipple);
+    document.addEventListener('click', (event) => {
+        addClickRipple(event);
+        if (!event.target.closest('.play-group')) {
+            document.querySelectorAll('.play-menu').forEach((menu) => menu.classList.add('hidden'));
+        }
+    });
     window.addEventListener('resize', initCanvas);
 }
 
