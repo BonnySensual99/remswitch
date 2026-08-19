@@ -149,11 +149,6 @@ svg { width: 18px; height: 18px; fill: currentColor; }
 .quick-empty { grid-column: 1 / -1; padding: 18px; border: 1px dashed var(--line); border-radius: 10px; color: var(--muted); text-align: center; }
 .quick-empty strong, .quick-empty span { display: block; }
 .quick-empty strong { color: var(--text); font-size: 11px; }
-.quick-empty span { margin-top: 4px; font-size: 10px; }
-body[data-view="dashboard"] .command-bar,
-body[data-view="dashboard"] .accounts-scroll { display: none; }
-body[data-view="accounts"] .dashboard-brief { display: none; }
-
 .btn, .icon-btn { border: 1px solid var(--line-strong); border-radius: 9px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; transition: transform .16s ease, border-color .16s ease, background .16s ease; }
 .btn { min-height: 40px; padding: 0 16px; }
 .btn.primary { border-color: rgba(var(--accent-rgb), .75); background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 72%, #8d1521)); color: #fff; box-shadow: 0 8px 25px rgba(var(--accent-rgb), .24); }

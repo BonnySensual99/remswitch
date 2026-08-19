@@ -38,7 +38,7 @@ let profile = { username: '', createdAt: 0 };
 let settings = null;
 let runtimeStatus = null;
 let currentFilter = 'all';
-let currentView = 'dashboard';
+let currentView = 'accounts';
 let activeRequestId = null;
 let lastSwitchAccount = null;
 let openModal = null;
@@ -301,36 +301,6 @@ function renderRuntime() {
     const busy = activeRequestId || runtimeStatus?.activeRequestId;
     operation.textContent = busy ? 'En curso' : 'Disponible';
     operation.className = busy ? 'state-warn' : 'state-ok';
-    renderDashboard();
-}
-
-function renderDashboard() {
-    const briefClient = $('briefClient');
-    const briefSession = $('briefSession');
-    const briefGame = $('briefGame');
-    if (!briefClient || !briefSession || !briefGame) return;
-    const riotReady = runtimeStatus?.riotClientFound && runtimeStatus?.riotSignatureValid;
-    const session = runtimeStatus?.activeSession?.riotId || '';
-    const runningGame = runtimeStatus?.runningGame || '';
-    const busy = activeRequestId || runtimeStatus?.activeRequestId;
-    briefClient.textContent = riotReady ? 'Firmado' : runtimeStatus?.riotClientFound ? 'Sin validar' : 'No encontrado';
-    briefClient.className = riotReady ? 'state-ok' : 'state-bad';
-    $('briefClientNote').textContent = riotReady ? 'Ruta verificada localmente' : 'Revisa Ajustes para diagnosticarlo';
-    briefSession.textContent = session || 'Sin sesión';
-    briefSession.className = session ? 'state-warn' : 'state-ok';
-    $('briefSessionNote').textContent = session ? 'Detectada en este equipo' : 'No es presencia global';
-    briefGame.textContent = runningGame === 'league_of_legends' ? 'LoL abierto' : runningGame === 'valorant' ? 'VALORANT abierto' : 'Cerrado';
-    briefGame.className = runningGame ? 'state-warn' : 'state-ok';
-    $('briefGameNote').textContent = runningGame ? 'Ciérralo antes de cambiar' : 'No se cerrarán partidas';
-    $('briefTitle').textContent = busy ? 'Cambio en curso' : session ? 'Sesión detectada' : accounts.length ? 'Listo para cambiar' : 'Configura tu primera cuenta';
-    $('briefMessage').textContent = busy
-        ? 'La operación está bloqueada para evitar acciones simultáneas.'
-        : session
-            ? `Riot Client tiene activa la sesión ${session}.`
-            : accounts.length
-                ? 'Selecciona una cuenta propia y prepara tu siguiente sesión.'
-                : 'Registra tu primera cuenta cifrada para empezar.';
-    renderQuickSwitch();
 }
 
 const GAME_LOGOS = {
@@ -360,33 +330,6 @@ function getGameLogoSvg(game) {
 function getRankIconSvg(rank) {
     const cls = getRankClass(rank).replace('rank-', '');
     return RANK_ICONS[cls] || RANK_ICONS.unranked;
-}
-
-function renderQuickSwitch() {
-    const list = $('quickSwitchList');
-    if (!list) return;
-    list.textContent = '';
-    const quickAccounts = [...accounts]
-        .sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite) || (b.lastUsedAt || 0) - (a.lastUsedAt || 0))
-        .slice(0, 4);
-    if (!quickAccounts.length) {
-        const empty = document.createElement('div');
-        empty.className = 'quick-empty';
-        empty.innerHTML = '<strong>Aún no hay accesos rápidos</strong><span>Usa “Añadir cuenta” para empezar.</span>';
-        list.append(empty);
-        return;
-    }
-    for (const account of quickAccounts) {
-        const isCurrent = Boolean(runtimeStatus?.activeSession?.riotId && account.riotId && runtimeStatus.activeSession.riotId.toLowerCase() === account.riotId.toLowerCase());
-        const item = document.createElement('button');
-        item.className = `quick-account${isCurrent ? ' is-current' : ''}`;
-        item.type = 'button';
-        item.disabled = Boolean(activeRequestId) || isCurrent;
-        item.setAttribute('aria-label', isCurrent ? `${account.displayName}, sesión activa` : `Cambiar a ${account.displayName}`);
-        item.innerHTML = `<span class="quick-game game-${account.game}">${getGameLogoSvg(account.game)}</span><span class="quick-copy"><strong>${escapeHtml(account.displayName)}</strong><small>${escapeHtml(account.riotId || account.region || 'Riot ID sin configurar')}</small></span><span class="quick-action" aria-hidden="true">${isCurrent ? 'ACTIVA' : '→'}</span>`;
-        item.addEventListener('click', () => beginSwitch(account));
-        list.append(item);
-    }
 }
 
 function renderActivity() {
@@ -604,7 +547,7 @@ function renderAccounts() {
 }
 
 function setSwitchControlsDisabled(disabled) {
-    document.querySelectorAll('.play-btn, .play-btn-drop, .play-menu-item, .account-card .edit, .account-card .delete, #btnAdd, #btnQuickImport, #btnImport').forEach((button) => { button.disabled = disabled || button.dataset.current === 'true'; });
+    document.querySelectorAll('.play-btn, .play-btn-drop, .play-menu-item, .account-card .edit, .account-card .delete, #btnAdd, #btnSyncLiveRank').forEach((button) => { button.disabled = disabled || button.dataset.current === 'true'; });
 }
 
 function setActiveNav(tabName) {
@@ -617,23 +560,10 @@ function setActiveNav(tabName) {
 }
 
 function setView(view, focusSearch = false) {
-    currentView = view === 'accounts' ? 'accounts' : 'dashboard';
-    document.body.dataset.view = currentView;
-    document.body.classList.remove('view-switching');
-    void document.body.offsetWidth;
-    document.body.classList.add('view-switching');
-    clearTimeout(viewAnimationTimer);
-    viewAnimationTimer = setTimeout(() => document.body.classList.remove('view-switching'), 420);
-    setActiveNav(currentView);
-    if (currentView === 'accounts') {
-        $('pageTitle').textContent = 'Bóveda de cuentas';
-        $('pageSubtitle').textContent = 'Gestiona, filtra y prepara tus cuentas guardadas localmente.';
-        if (focusSearch) requestAnimationFrame(() => elements.searchInput.focus());
-    } else {
-        $('pageTitle').textContent = 'Centro operativo';
-        $('pageSubtitle').textContent = 'Estado local, accesos rápidos y control seguro de tus sesiones.';
-    }
-    renderDashboard();
+    currentView = 'accounts';
+    document.body.dataset.view = 'accounts';
+    setActiveNav('accounts');
+    if (focusSearch) requestAnimationFrame(() => elements.searchInput.focus());
     renderAccounts();
 }
 
@@ -970,7 +900,6 @@ function bindEvents() {
     $('btnClose').addEventListener('click', () => rendererApi?.closeWindow());
     $('btnAdd').addEventListener('click', () => openAccountModal());
     $('btnAutofillSession').addEventListener('click', autofillSessionFromRiot);
-    $('btnViewAccounts').addEventListener('click', () => setView('accounts', true));
     $('userPill').addEventListener('click', openProfile);
 
     $('btnCloseAccountModal').addEventListener('click', () => hideModal(elements.accountModal));

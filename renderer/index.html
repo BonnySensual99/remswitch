@@ -17,13 +17,9 @@
         </div>
 
         <nav class="nav-tabs" id="navTabs" aria-label="Navegación principal">
-            <button class="nav-tab active" data-tab="dashboard" aria-current="page" type="button">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6v-9h-6v9Zm0-16v5h6V4h-6Z"/></svg>
-                Centro
-            </button>
-            <button class="nav-tab" data-tab="accounts" type="button">
+            <button class="nav-tab active" data-tab="accounts" aria-current="page" type="button">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0H5Z"/></svg>
-                Cuentas
+                Mis Cuentas
             </button>
             <button class="nav-tab" data-tab="settings" type="button">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m19.4 13 .1-1-.1-1 2-1.5-2-3.4-2.4 1a8 8 0 0 0-1.8-1L15 3.5h-4l-.3 2.6a8 8 0 0 0-1.8 1l-2.4-1-2 3.4 2 1.5-.1 1 .1 1-2 1.5 2 3.4 2.4-1a8 8 0 0 0 1.8 1l.3 2.6h4l.3-2.6a8 8 0 0 0 1.8-1l2.4 1 2-3.4-2-1.5ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/></svg>
@@ -69,37 +65,20 @@
 
             <section class="hero-row" aria-labelledby="pageTitle">
                 <div class="hero-copy">
-                    <span class="eyebrow">CONTROL CENTER // LOCAL</span>
-                    <h1 id="pageTitle">Escuadrón de cuentas</h1>
-                    <p id="pageSubtitle">Cambia entre Valorant y League of Legends sin sacar tus datos del equipo.</p>
+                    <span class="eyebrow">GESTOR LOCAL // RIOT</span>
+                    <h1 id="pageTitle">Mis Cuentas</h1>
+                    <p id="pageSubtitle">Cambia entre Valorant y League of Legends con 1 solo clic.</p>
                 </div>
                 <div class="hero-actions">
+                    <button class="btn secondary" id="btnSyncLiveRank" type="button">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+                        Sincronizar rango
+                    </button>
                     <button class="btn primary" id="btnAdd" type="button">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z"/></svg>
                         Añadir cuenta
                     </button>
                 </div>
-            </section>
-
-            <section class="dashboard-brief" id="dashboardBrief" aria-labelledby="briefTitle">
-                <div class="brief-hero">
-                    <span class="eyebrow">OPERACIÓN ACTUAL</span>
-                    <h2 id="briefTitle">Listo para cambiar</h2>
-                    <p id="briefMessage">Selecciona una cuenta propia y RemSwitcher preparará Riot Client.</p>
-                    <div class="brief-actions">
-                        <button class="btn secondary small" id="btnSyncLiveRank" type="button">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
-                            Sincronizar rango en vivo
-                        </button>
-                    </div>
-                </div>
-                <div class="brief-metrics" aria-label="Resumen local">
-                    <div class="brief-metric"><span>CLIENTE</span><strong id="briefClient">Sin validar</strong><small id="briefClientNote">Detección local</small></div>
-                    <div class="brief-metric"><span>SESIÓN EN ESTE EQUIPO</span><strong id="briefSession">Sin sesión</strong><small id="briefSessionNote">No es presencia global</small></div>
-                    <div class="brief-metric"><span>JUEGO</span><strong id="briefGame">Cerrado</strong><small id="briefGameNote">No se cerrarán partidas</small></div>
-                </div>
-                <div class="quick-switch-heading"><div><span class="eyebrow">ACCESOS RÁPIDOS</span><h3>Comandos recientes</h3></div><button class="text-btn" id="btnViewAccounts" type="button">Ver todas las cuentas <span aria-hidden="true">→</span></button></div>
-                <div class="quick-switch-grid" id="quickSwitchList" aria-live="polite"></div>
             </section>
 
             <section class="command-bar" aria-label="Filtros de cuentas">
