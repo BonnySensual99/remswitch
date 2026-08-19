@@ -382,34 +382,134 @@ function createWindow() {
     });
 }
 
-function updateTrayMenu() {
-    if (!tray) return;
-    const items = store.loadAccounts().map((account) => ({
-        label: `Jugar · ${account.displayName}`,
-        enabled: !operationGate.activeRequestId,
-        click: () => {
-            if (operationGate.activeRequestId) return;
-            const requestId = crypto.randomUUID();
-            operationGate.begin(requestId);
-            startAccountSwitch(account.id, requestId);
-        }
-    }));
-    tray.setContextMenu(Menu.buildFromTemplate([
-        { label: 'RemSwitcher', enabled: false },
+function showMainWindow() {
+    if (!mainWindow || mainWindow.isDestroyed()) {
+        createWindow();
+        return;
+    }
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    if (!mainWindow.isVisible()) mainWindow.show();
+    mainWindow.focus();
+}
+
+function updateTrayMenu(sessionInfo = null) {
+    if (!tray || tray.isDestroyed()) return;
+    const settings = store ? store.loadSettings() : DEFAULT_SETTINGS;
+    const accounts = store ? store.loadAccounts() : [];
+    const isBusy = Boolean(operationGate.activeRequestId);
+
+    const activeRiotId = sessionInfo?.riotId || '';
+    if (activeRiotId) {
+        tray.setToolTip(`RemSwitcher · Sesión: ${activeRiotId}`);
+    } else {
+        tray.setToolTip('RemSwitcher · Gestor de cuentas Riot');
+    }
+
+    const valAccounts = accounts.filter((a) => a.game !== 'league_of_legends');
+    const lolAccounts = accounts.filter((a) => a.game === 'league_of_legends');
+
+    function createAccountMenuItem(account) {
+        const isCurrent = activeRiotId && account.riotId && activeRiotId.toLowerCase() === account.riotId.toLowerCase();
+        const prefix = isCurrent ? '● ' : '';
+        const regionStr = account.region ? ` [${account.region}]` : '';
+        return {
+            label: `${prefix}${account.displayName}${regionStr}`,
+            enabled: !isBusy,
+            click: () => {
+                if (operationGate.activeRequestId) return;
+                const requestId = crypto.randomUUID();
+                operationGate.begin(requestId);
+                startAccountSwitch(account.id, requestId);
+                showMainWindow();
+            }
+        };
+    }
+
+    const menuTemplate = [
+        { label: `RemSwitcher v${app.getVersion()}`, enabled: false },
+        {
+            label: activeRiotId ? `● Riot: ${activeRiotId}` : '○ Riot: Sin sesión',
+            enabled: false
+        },
         { type: 'separator' },
-        ...items,
-        ...(items.length ? [{ type: 'separator' }] : []),
-        { label: 'Abrir', click: () => { mainWindow.show(); mainWindow.focus(); } },
-        { label: 'Salir', click: () => { app.isQuitting = true; app.quit(); } }
-    ]));
+        { label: 'Abrir RemSwitcher', click: () => showMainWindow() },
+        { type: 'separator' }
+    ];
+
+    if (accounts.length > 0) {
+        if (accounts.length <= 6) {
+            menuTemplate.push(
+                ...accounts.map((acc) => {
+                    const tag = acc.game === 'league_of_legends' ? '[LoL]' : '[VAL]';
+                    const item = createAccountMenuItem(acc);
+                    item.label = `${tag} ${item.label}`;
+                    return item;
+                })
+            );
+        } else {
+            if (valAccounts.length > 0) {
+                menuTemplate.push({
+                    label: `Valorant (${valAccounts.length})`,
+                    submenu: valAccounts.map(createAccountMenuItem)
+                });
+            }
+            if (lolAccounts.length > 0) {
+                menuTemplate.push({
+                    label: `League of Legends (${lolAccounts.length})`,
+                    submenu: lolAccounts.map(createAccountMenuItem)
+                });
+            }
+        }
+        menuTemplate.push({ type: 'separator' });
+    }
+
+    menuTemplate.push(
+        {
+            label: 'Cerrar sesión de Riot Client',
+            enabled: !isBusy,
+            click: async () => {
+                try {
+                    await logoutRiotSession();
+                    updateTrayMenu();
+                } catch (error) {
+                    log('WARN', `Error al cerrar sesión desde tray: ${error.message}`);
+                }
+            }
+        },
+        { type: 'separator' },
+        {
+            label: 'Minimizar a la bandeja al cerrar',
+            type: 'checkbox',
+            checked: Boolean(settings.minimizeToTray),
+            click: (menuItem) => {
+                const currentSettings = store ? store.loadSettings() : DEFAULT_SETTINGS;
+                const nextSettings = { ...currentSettings, minimizeToTray: menuItem.checked };
+                store.saveSettings(nextSettings);
+                updateTrayMenu();
+                if (mainWindow && !mainWindow.isDestroyed()) {
+                    mainWindow.webContents.send('settings-updated', nextSettings);
+                }
+            }
+        },
+        {
+            label: 'Salir de RemSwitcher',
+            click: () => {
+                app.isQuitting = true;
+                app.quit();
+            }
+        }
+    );
+
+    tray.setContextMenu(Menu.buildFromTemplate(menuTemplate));
 }
 
 function setupTray() {
     const iconPath = path.join(__dirname, 'build', 'icon.png');
     const fallback = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAE0lEQVR42mP8z8AARA0gFAAD/gAAVh8B9mH+m0cAAAAASUVORK5CYII=');
     tray = new Tray(fs.existsSync(iconPath) ? nativeImage.createFromPath(iconPath) : fallback);
-    tray.setToolTip('RemSwitcher');
-    tray.on('click', () => { mainWindow.show(); mainWindow.focus(); });
+    tray.setToolTip('RemSwitcher · Gestor de cuentas Riot');
+    tray.on('click', () => showMainWindow());
+    tray.on('double-click', () => showMainWindow());
     updateTrayMenu();
 }
 
@@ -560,6 +660,7 @@ function registerIpc() {
             riotSignatureValid = true;
         } catch {}
         const activeSession = await queryRiotSession();
+        updateTrayMenu(activeSession);
         const runningProcess = GAME_PROCESSES.find(isProcessRunning) || '';
         const runningGame = /leagueclient|league of legends/i.test(runningProcess) ? 'league_of_legends' : runningProcess ? 'valorant' : null;
         return {
@@ -627,5 +728,10 @@ if (!gotTheLock) {
 
 app.on('before-quit', () => { app.isQuitting = true; });
 app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin' && app.isQuitting) app.quit();
+    if (process.platform !== 'darwin') {
+        const settings = store ? store.loadSettings() : DEFAULT_SETTINGS;
+        if (!settings.minimizeToTray || app.isQuitting) {
+            app.quit();
+        }
+    }
 });
