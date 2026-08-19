@@ -1,0 +1,631 @@
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, safeStorage, session } = require('electron');
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
+const { execFileSync } = require('child_process');
+const { JsonStore } = require('./lib/storage');
+const { normalizeAccountInput, normalizeSettings } = require('./lib/validation');
+const { decryptFromCandidates } = require('./lib/legacy-safe-storage');
+const { runBridge } = require('./lib/bridge-runner');
+const { OperationGate } = require('./lib/operation-gate');
+const { launchDetached } = require('./lib/process-launcher');
+const { queryRiotSession, logoutRiotSession } = require('./lib/riot-session');
+
+const APP_DATA_DIR = path.join(process.env.LOCALAPPDATA || app.getPath('appData'), 'RemSwitcher');
+const LEGACY_DATA_DIR = path.join(process.env.LOCALAPPDATA || app.getPath('appData'), 'ValorantAccountManager');
+fs.mkdirSync(APP_DATA_DIR, { recursive: true });
+app.setPath('userData', APP_DATA_DIR);
+
+const DEFAULT_SETTINGS = Object.freeze({
+    startWithWindows: false,
+    minimizeToTray: true,
+    autoLaunchGame: true,
+    closeOnLaunch: false,
+    confirmSwitch: true,
+    soundEnabled: true,
+    reducedMotion: false,
+    initialDelayMs: 1800,
+    charDelayMs: 15,
+    fieldDelayMs: 200,
+    customRiotPath: ''
+});
+
+const GAME_ARGS = Object.freeze({
+    valorant: ['--launch-product=valorant', '--launch-patchline=live'],
+    league_of_legends: ['--launch-product=league_of_legends', '--launch-patchline=live']
+});
+
+const GAME_PROCESSES = Object.freeze([
+    'VALORANT.exe',
+    'VALORANT-Win64-Shipping.exe',
+    'LeagueClient.exe',
+    'LeagueClientUx.exe',
+    'League of Legends.exe'
+]);
+
+const RIOT_PROCESSES = Object.freeze(['RiotClientServices.exe', 'Riot Client.exe', 'RiotClientUx.exe']);
+const LOG_MAX_BYTES = 1024 * 1024;
+const logPath = path.join(APP_DATA_DIR, 'app.log');
+
+let mainWindow = null;
+let tray = null;
+let store = null;
+const operationGate = new OperationGate();
+
+function rotateLogIfNeeded() {
+    try {
+        if (!fs.existsSync(logPath) || fs.statSync(logPath).size < LOG_MAX_BYTES) return;
+        const backup = `${logPath}.1`;
+        if (fs.existsSync(backup)) fs.unlinkSync(backup);
+        fs.renameSync(logPath, backup);
+    } catch {}
+}
+
+function log(level, message) {
+    try {
+        fs.mkdirSync(APP_DATA_DIR, { recursive: true });
+        rotateLogIfNeeded();
+        const safeMessage = String(message)
+            .replace(/Authorization:\s*Basic\s+\S+/gi, 'Authorization: [REDACTED]')
+            .replace(/password["'=:\s]+\S+/gi, 'password=[REDACTED]');
+        fs.appendFileSync(logPath, `[${new Date().toISOString()}] [${level}] ${safeMessage}\n`, 'utf8');
+    } catch {}
+}
+
+function delay(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function toPublicAccount(account) {
+    const { encryptedPassword, ...publicAccount } = account;
+    return { ...publicAccount, hasPassword: Boolean(encryptedPassword) };
+}
+
+function encryptPassword(plainText) {
+    if (!plainText) throw new Error('La contraseña es obligatoria.');
+    if (!safeStorage.isEncryptionAvailable()) {
+        throw new Error('Windows DPAPI no está disponible para cifrar la contraseña.');
+    }
+    return `v2:${safeStorage.encryptString(plainText).toString('base64')}`;
+}
+
+function decryptLegacyDpapi(encryptedData) {
+    if (!/^[A-Za-z0-9+/=]+$/.test(encryptedData) || encryptedData.length > 32768) {
+        throw new Error('El formato de contraseña antigua no es válido.');
+    }
+    const script = `Add-Type -AssemblyName System.Security;[Console]::OutputEncoding=[Text.Encoding]::UTF8;$d=[System.Security.Cryptography.ProtectedData]::Unprotect([Convert]::FromBase64String('${encryptedData}'),$null,[System.Security.Cryptography.DataProtectionScope]::CurrentUser);[Convert]::ToBase64String($d)`;
+    const result = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
+        encoding: 'utf8',
+        windowsHide: true,
+        timeout: 8000,
+        maxBuffer: 1024 * 1024
+    }).trim();
+    return Buffer.from(result, 'base64').toString('utf8');
+}
+
+function decryptAccountPassword(account) {
+    const encrypted = account.encryptedPassword || '';
+    if (encrypted.startsWith('v2:')) {
+        if (!safeStorage.isEncryptionAvailable()) throw new Error('Windows DPAPI no está disponible.');
+        const encryptedBuffer = Buffer.from(encrypted.slice(3), 'base64');
+        try {
+            return safeStorage.decryptString(encryptedBuffer);
+        } catch {
+            const roaming = process.env.APPDATA || '';
+            const plainText = decryptFromCandidates(encryptedBuffer, [
+                path.join(roaming, 'valorant-account-manager', 'Local State'),
+                path.join(roaming, 'remswitcher', 'Local State')
+            ]);
+            account.encryptedPassword = encryptPassword(plainText);
+            const accounts = store.loadAccounts();
+            const index = accounts.findIndex((item) => item.id === account.id);
+            if (index >= 0) {
+                accounts[index] = account;
+                store.saveAccounts(accounts);
+            }
+            return plainText;
+        }
+    }
+    if (!encrypted) throw new Error('La cuenta no tiene una contraseña guardada.');
+
+    const plainText = decryptLegacyDpapi(encrypted);
+    account.encryptedPassword = encryptPassword(plainText);
+    const accounts = store.loadAccounts();
+    const index = accounts.findIndex((item) => item.id === account.id);
+    if (index >= 0) {
+        accounts[index] = account;
+        store.saveAccounts(accounts);
+    }
+    return plainText;
+}
+
+function findRiotClientPath() {
+    const settings = store.loadSettings();
+    if (settings.customRiotPath) return validateRiotExecutable(settings.customRiotPath, true);
+
+    const programData = process.env.ALLUSERSPROFILE || 'C:\\ProgramData';
+    const installsPath = path.join(programData, 'Riot Games', 'RiotClientInstalls.json');
+    try {
+        const installs = JSON.parse(fs.readFileSync(installsPath, 'utf8'));
+        for (const candidate of [installs.rc_live, installs.rc_default]) {
+            if (candidate && fs.existsSync(candidate)) return candidate;
+        }
+    } catch {}
+
+    const candidates = [
+        'C:\\Riot Games\\Riot Client\\RiotClientServices.exe',
+        'C:\\Program Files\\Riot Games\\Riot Client\\RiotClientServices.exe',
+        'C:\\Program Files (x86)\\Riot Games\\Riot Client\\RiotClientServices.exe'
+    ];
+    return candidates.find((candidate) => fs.existsSync(candidate)) || '';
+}
+
+function validateRiotExecutable(inputPath, verifySignature = false) {
+    const resolved = path.resolve(String(inputPath || ''));
+    if (path.basename(resolved).toLowerCase() !== 'riotclientservices.exe' || !fs.existsSync(resolved)) {
+        throw new Error('Selecciona un RiotClientServices.exe válido.');
+    }
+    if (verifySignature) {
+        const encodedPath = Buffer.from(resolved, 'utf8').toString('base64');
+        const script = `$p=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${encodedPath}'));$s=Get-AuthenticodeSignature -LiteralPath $p;Write-Output ($s.Status.ToString()+'|'+$s.SignerCertificate.Subject)`;
+        const result = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
+            encoding: 'utf8', windowsHide: true, timeout: 8000, maxBuffer: 1024 * 1024
+        }).trim();
+        if (!result.startsWith('Valid|') || !result.toLowerCase().includes('riot games')) {
+            throw new Error('El ejecutable no tiene una firma válida de Riot Games.');
+        }
+    }
+    return resolved;
+}
+
+function resolveValidatedRiotClient() {
+    const foundPath = findRiotClientPath();
+    if (!foundPath) throw Object.assign(new Error('No se encontró RiotClientServices.exe.'), { code: 'RIOT_NOT_FOUND' });
+    try {
+        return validateRiotExecutable(foundPath, true);
+    } catch (error) {
+        error.code = error.code || 'RIOT_SIGNATURE_INVALID';
+        throw error;
+    }
+}
+
+function isProcessRunning(exeName) {
+    try {
+        const output = execFileSync('tasklist.exe', ['/FI', `IMAGENAME eq ${exeName}`, '/FO', 'CSV', '/NH'], {
+            encoding: 'utf8', windowsHide: true, timeout: 5000
+        });
+        return output.toLowerCase().includes(`"${exeName.toLowerCase()}"`);
+    } catch {
+        return false;
+    }
+}
+
+async function terminateRiotProcesses() {
+    const running = RIOT_PROCESSES.filter(isProcessRunning);
+    if (!running.length) return true;
+    try {
+        const args = ['/F'];
+        for (const processName of running) args.push('/IM', processName);
+        execFileSync('taskkill.exe', args, { stdio: 'ignore', windowsHide: true, timeout: 8000 });
+    } catch {}
+    for (let attempt = 0; attempt < 30; attempt += 1) {
+        if (!RIOT_PROCESSES.some(isProcessRunning)) return true;
+        await delay(200);
+    }
+    return false;
+}
+
+function getBridgeExePath() {
+    const candidates = [
+        path.join(process.resourcesPath, 'native', 'RiotManagerBridge.exe'),
+        path.join(process.resourcesPath, 'resources', 'RiotManagerBridge.exe'),
+        path.join(__dirname, 'native', 'RiotManagerBridge.exe'),
+        path.join(__dirname, 'resources', 'RiotManagerBridge.exe'),
+        path.join(__dirname, 'build', 'bin', 'Release', 'RiotManagerBridge.exe')
+    ];
+    return candidates.find((candidate) => fs.existsSync(candidate)) || candidates[0];
+}
+
+function emitSwitch(payload) {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('switch-state', payload);
+}
+
+async function waitForAuthenticatedSession(account, payloadBase) {
+    const deadline = Date.now() + 90000;
+    emitSwitch({ ...payloadBase, state: 'WaitingForAuthentication', message: 'Esperando confirmación de Riot. Completa el MFA si aparece.' });
+    while (Date.now() < deadline) {
+        const sessionInfo = await queryRiotSession();
+        if (sessionInfo) {
+            if (account.riotId && sessionInfo.riotId.toLowerCase() !== account.riotId.toLowerCase()) {
+                const error = new Error(`Riot inició otra cuenta (${sessionInfo.riotId}).`);
+                error.code = 'ACCOUNT_MISMATCH';
+                throw error;
+            }
+            return sessionInfo;
+        }
+        await delay(1000);
+    }
+    const error = new Error('Riot no confirmó la sesión a tiempo. Revisa la contraseña o completa el MFA.');
+    error.code = 'AUTH_TIMEOUT';
+    throw error;
+}
+
+function getSwitchErrorState(error) {
+    if (error?.uiState) return error.uiState;
+    if (error?.code === 'PASSWORD_INCORRECT') return 'WrongPassword';
+    if (['BRIDGE_TIMEOUT', 'AUTH_TIMEOUT'].includes(error?.code)) return 'Timeout';
+    if (['RIOT_LOGOUT_FAILED', 'RIOT_NOT_FOUND', 'RIOT_SIGNATURE_INVALID', 'BRIDGE_MISSING', 'NO_LOGIN_WINDOW'].includes(error?.code)) return 'ManualActionRequired';
+    return 'Error';
+}
+
+async function startAccountSwitch(accountId, requestId) {
+    const payloadBase = { requestId, game: 'valorant' };
+    try {
+        const accounts = store.loadAccounts();
+        const account = accounts.find((item) => item.id === accountId);
+        if (!account) throw Object.assign(new Error('La cuenta ya no existe.'), { code: 'ACCOUNT_NOT_FOUND' });
+        payloadBase.game = account.game;
+        const settings = normalizeSettings(store.loadSettings(), DEFAULT_SETTINGS);
+
+        emitSwitch({ ...payloadBase, state: 'CheckingRiotClient', message: 'Comprobando Riot Client…' });
+        const runningGame = GAME_PROCESSES.find(isProcessRunning);
+        if (runningGame) throw Object.assign(new Error('Cierra el juego antes de cambiar de cuenta.'), { code: 'GAME_RUNNING' });
+
+        const riotPath = resolveValidatedRiotClient();
+        const bridgePath = getBridgeExePath();
+        if (!fs.existsSync(bridgePath)) throw Object.assign(new Error('No se encontró el puente nativo.'), { code: 'BRIDGE_MISSING' });
+
+        const activeSession = await queryRiotSession();
+        if (activeSession) {
+            emitSwitch({ ...payloadBase, state: 'LoggingOut', message: `Cerrando la sesión de ${activeSession.riotId}…` });
+            const logout = await logoutRiotSession();
+            if (!logout.loggedOut) {
+                throw Object.assign(new Error('Riot Client no confirmó el cierre de sesión. Cierra sesión manualmente y vuelve a intentarlo.'), { code: 'RIOT_LOGOUT_FAILED', uiState: 'ManualActionRequired' });
+            }
+            emitSwitch({ ...payloadBase, state: 'LogoutConfirmed', message: 'Sesión anterior cerrada.' });
+        }
+
+        const password = decryptAccountPassword(account);
+        emitSwitch({ ...payloadBase, state: 'ClosingExistingSession', message: 'Cerrando la sesión anterior…' });
+        if (!(await terminateRiotProcesses())) throw Object.assign(new Error('Riot Client no pudo cerrarse.'), { code: 'RIOT_CLOSE_FAILED' });
+
+        emitSwitch({ ...payloadBase, state: 'StartingRiotClient', message: 'Abriendo Riot Client…' });
+        await launchDetached(riotPath, ['--open-shortcuts']);
+
+        await runBridge({
+            bridgePath,
+            request: {
+                username: account.username,
+                password,
+                riotClientPath: riotPath,
+                initialDelayMs: settings.initialDelayMs,
+                charDelayMs: settings.charDelayMs,
+                fieldDelayMs: settings.fieldDelayMs
+            },
+            onState: (event) => emitSwitch({ ...payloadBase, ...event })
+        });
+
+        await waitForAuthenticatedSession(account, payloadBase);
+        if (settings.autoLaunchGame) {
+            emitSwitch({ ...payloadBase, state: 'LaunchingGame', message: account.game === 'league_of_legends' ? 'Iniciando League of Legends…' : 'Iniciando VALORANT…' });
+            await launchDetached(riotPath, GAME_ARGS[account.game]);
+        }
+
+        const now = Math.floor(Date.now() / 1000);
+        const latestAccounts = store.loadAccounts();
+        const index = latestAccounts.findIndex((item) => item.id === account.id);
+        if (index >= 0) {
+            latestAccounts[index].lastUsedAt = now;
+            store.saveAccounts(latestAccounts);
+        }
+        const activity = store.loadActivity();
+        activity.unshift({ id: crypto.randomUUID(), accountId: account.id, game: account.game, text: `Sesión iniciada en ${account.displayName}`, occurredAt: now, success: true });
+        store.saveActivity(activity);
+
+        emitSwitch({ ...payloadBase, state: 'Done', message: settings.autoLaunchGame ? 'Cuenta lista. Juego iniciado.' : 'Cuenta autenticada correctamente.' });
+        updateTrayMenu();
+        if (settings.closeOnLaunch) {
+            app.isQuitting = true;
+            app.quit();
+        }
+    } catch (error) {
+        log('ERROR', `${error.code || 'SWITCH_ERROR'}: ${error.message}`);
+        emitSwitch({ ...payloadBase, state: getSwitchErrorState(error), message: error.message || 'No se pudo cambiar de cuenta.', errorCode: error.code || 'SWITCH_ERROR' });
+    } finally {
+        operationGate.end(requestId);
+        updateTrayMenu();
+    }
+}
+
+async function detectActiveRiotSession() {
+    const live = await queryRiotSession();
+    if (!live) return { isValid: false };
+    return {
+        isValid: true,
+        displayName: live.gameName,
+        username: '',
+        riotId: live.riotId,
+        region: live.region.includes('NA') ? 'NA' : live.region.includes('KR') ? 'KR' : live.region.includes('AP') ? 'AP' : 'EU'
+    };
+}
+
+function createWindow() {
+    const iconPath = path.join(__dirname, 'build', 'icon.png');
+    mainWindow = new BrowserWindow({
+        width: 1180,
+        height: 800,
+        minWidth: 960,
+        minHeight: 680,
+        frame: false,
+        backgroundColor: '#05070c',
+        icon: fs.existsSync(iconPath) ? iconPath : undefined,
+        show: false,
+        webPreferences: {
+            preload: path.join(__dirname, 'preload.js'),
+            nodeIntegration: false,
+            contextIsolation: true,
+            sandbox: true,
+            webSecurity: true,
+            devTools: !app.isPackaged
+        }
+    });
+    mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    mainWindow.webContents.on('will-navigate', (event) => event.preventDefault());
+    mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+    mainWindow.once('ready-to-show', () => mainWindow.show());
+    mainWindow.on('close', (event) => {
+        const settings = store.loadSettings();
+        if (settings.minimizeToTray && !app.isQuitting) {
+            event.preventDefault();
+            mainWindow.hide();
+        }
+    });
+}
+
+function updateTrayMenu() {
+    if (!tray) return;
+    const items = store.loadAccounts().map((account) => ({
+        label: `Jugar · ${account.displayName}`,
+        enabled: !operationGate.activeRequestId,
+        click: () => {
+            if (operationGate.activeRequestId) return;
+            const requestId = crypto.randomUUID();
+            operationGate.begin(requestId);
+            startAccountSwitch(account.id, requestId);
+        }
+    }));
+    tray.setContextMenu(Menu.buildFromTemplate([
+        { label: 'RemSwitcher', enabled: false },
+        { type: 'separator' },
+        ...items,
+        ...(items.length ? [{ type: 'separator' }] : []),
+        { label: 'Abrir', click: () => { mainWindow.show(); mainWindow.focus(); } },
+        { label: 'Salir', click: () => { app.isQuitting = true; app.quit(); } }
+    ]));
+}
+
+function setupTray() {
+    const iconPath = path.join(__dirname, 'build', 'icon.png');
+    const fallback = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAE0lEQVR42mP8z8AARA0gFAAD/gAAVh8B9mH+m0cAAAAASUVORK5CYII=');
+    tray = new Tray(fs.existsSync(iconPath) ? nativeImage.createFromPath(iconPath) : fallback);
+    tray.setToolTip('RemSwitcher');
+    tray.on('click', () => { mainWindow.show(); mainWindow.focus(); });
+    updateTrayMenu();
+}
+
+function registerPackagedSmokeIpc() {
+    const accounts = [{
+        id: 'packaged-smoke-account', displayName: 'Operador EU', game: 'valorant', region: 'EU',
+        username: 'smoke-user', riotId: 'Operador#EU', rank: 'Oro', level: '94 RR',
+        avatarAgent: 'Jett', notes: '', isFavorite: true, lastUsedAt: 0
+    }];
+    const settings = {
+        startWithWindows: false,
+        minimizeToTray: true,
+        closeOnLaunch: false,
+        confirmSwitch: true,
+        autoLaunchGame: true,
+        soundEnabled: false,
+        reducedMotion: true,
+        initialDelayMs: 1800,
+        charDelayMs: 15,
+        fieldDelayMs: 200,
+        customRiotPath: ''
+    };
+    ipcMain.handle('get-accounts', () => accounts);
+    ipcMain.handle('get-activity-log', () => []);
+    ipcMain.handle('get-user-profile', () => ({ username: '', createdAt: 0 }));
+    ipcMain.handle('get-settings', () => settings);
+    ipcMain.handle('get-runtime-status', () => ({
+        riotClientFound: true,
+        riotSignatureValid: true,
+        activeSession: { riotId: 'Operador#EU', region: 'EU' },
+        runningGame: null,
+        encryptionAvailable: true,
+        activeRequestId: null
+    }));
+}
+
+async function runPackagedSmoke() {
+    const consoleErrors = [];
+    registerPackagedSmokeIpc();
+    createWindow();
+    mainWindow.webContents.on('console-message', (_event, level, message) => {
+        if (level >= 2) consoleErrors.push(message);
+    });
+    await mainWindow.webContents.executeJavaScript('new Promise((resolve) => { if (document.readyState === "complete") resolve(); else window.addEventListener("load", resolve, { once: true }); })');
+    const result = await mainWindow.webContents.executeJavaScript(`({
+        hasApi: typeof window.api === 'object',
+        hasRendererApiCollision: typeof window.rendererApi !== 'object',
+        addButton: document.getElementById('btnAdd') !== null,
+        settingsButton: document.querySelector('[data-tab="settings"]') !== null,
+        accountCard: document.querySelector('.account-card') !== null,
+        gameBadge: document.querySelector('.game-badge')?.textContent === 'VALORANT',
+        currentBadge: document.querySelector('.current-badge')?.textContent === 'ACTIVA'
+    })`);
+    await mainWindow.webContents.executeJavaScript('document.querySelector("[data-tab=\\"accounts\\"]").click()');
+    const accountsView = await mainWindow.webContents.executeJavaScript("({ view: document.body.dataset.view, title: document.getElementById('pageTitle').textContent, briefHidden: getComputedStyle(document.getElementById('dashboardBrief')).display === 'none' })");
+    await mainWindow.webContents.executeJavaScript('document.querySelector("[data-tab=\\"dashboard\\"]").click()');
+    const dashboardView = await mainWindow.webContents.executeJavaScript("({ view: document.body.dataset.view, briefVisible: getComputedStyle(document.getElementById('dashboardBrief')).display !== 'none' })");
+    await mainWindow.webContents.executeJavaScript('document.getElementById("btnAdd").click()');
+    const accountModalOpen = await mainWindow.webContents.executeJavaScript('document.getElementById("accountModal").classList.contains("active")');
+    await mainWindow.webContents.executeJavaScript('document.getElementById("btnCloseAccountModal").click(); document.querySelector("[data-tab=\\"settings\\"]").click()');
+    const settingsModalOpen = await mainWindow.webContents.executeJavaScript('document.getElementById("settingsModal").classList.contains("active")');
+    if (consoleErrors.length) throw new Error(`Errores de consola: ${consoleErrors.join(' | ')}`);
+    if (!result.hasApi || !result.hasRendererApiCollision || !result.addButton || !result.settingsButton || !result.accountCard || !result.gameBadge || !result.currentBadge || accountsView.view !== 'accounts' || accountsView.title !== 'Bóveda de cuentas' || !accountsView.briefHidden || dashboardView.view !== 'dashboard' || !dashboardView.briefVisible || !accountModalOpen || !settingsModalOpen) {
+        throw new Error('El smoke empaquetado no pudo accionar la precarga o los botones del renderer.');
+    }
+    console.log('Packaged smoke: precarga y botones OK');
+}
+
+function assertTrustedSender(event) {
+    const url = event.senderFrame?.url || '';
+    if (!url.startsWith('file://') || !url.endsWith('/renderer/index.html')) {
+        throw new Error('Origen IPC no autorizado.');
+    }
+}
+
+function registerIpc() {
+    const handle = (channel, fn) => ipcMain.handle(channel, (event, ...args) => {
+        assertTrustedSender(event);
+        return fn(...args);
+    });
+
+    handle('get-accounts', () => store.loadAccounts().map(toPublicAccount));
+    handle('save-account', (rawInput) => {
+        const input = normalizeAccountInput(rawInput);
+        const accounts = store.loadAccounts();
+        const index = input.id ? accounts.findIndex((item) => item.id === input.id) : -1;
+        if (index < 0 && !input.password) throw new Error('Introduce una contraseña para la nueva cuenta.');
+        const existing = index >= 0 ? accounts[index] : null;
+        const account = {
+            ...(existing || {}),
+            ...input,
+            id: existing?.id || crypto.randomUUID(),
+            encryptedPassword: input.password ? encryptPassword(input.password) : existing.encryptedPassword,
+            isFavorite: existing?.isFavorite || false,
+            createdAt: existing?.createdAt || Math.floor(Date.now() / 1000),
+            lastUsedAt: existing?.lastUsedAt || 0
+        };
+        delete account.password;
+        if (index >= 0) accounts[index] = account;
+        else accounts.push(account);
+        store.saveAccounts(accounts);
+        updateTrayMenu();
+        return accounts.map(toPublicAccount);
+    });
+    handle('delete-account', (rawId) => {
+        const id = String(rawId || '');
+        const accounts = store.loadAccounts().filter((item) => item.id !== id);
+        store.saveAccounts(accounts);
+        updateTrayMenu();
+        return accounts.map(toPublicAccount);
+    });
+    handle('toggle-favorite', ({ id, isFavorite } = {}) => {
+        const accounts = store.loadAccounts();
+        const account = accounts.find((item) => item.id === String(id || ''));
+        if (account) account.isFavorite = Boolean(isFavorite);
+        store.saveAccounts(accounts);
+        updateTrayMenu();
+        return accounts.map(toPublicAccount);
+    });
+    handle('get-settings', () => normalizeSettings(store.loadSettings(), DEFAULT_SETTINGS));
+    handle('save-settings', (rawSettings) => {
+        const settings = normalizeSettings(rawSettings, DEFAULT_SETTINGS);
+        if (settings.customRiotPath) validateRiotExecutable(settings.customRiotPath, true);
+        store.saveSettings(settings);
+        app.setLoginItemSettings({ openAtLogin: settings.startWithWindows, path: process.execPath });
+        return settings;
+    });
+    handle('test-riot-path', async () => {
+        try {
+            const foundPath = resolveValidatedRiotClient();
+            const sessionInfo = await queryRiotSession();
+            return { found: true, path: foundPath, signatureValid: true, activeSession: sessionInfo ? { riotId: sessionInfo.riotId, region: sessionInfo.region } : null };
+        } catch (error) {
+            return { found: false, signatureValid: false, errorCode: error.code || 'RIOT_NOT_FOUND', error: error.message };
+        }
+    });
+    handle('open-riot-client', async () => {
+        const riotPath = resolveValidatedRiotClient();
+        await launchDetached(riotPath, ['--open-shortcuts']);
+        return { opened: true, path: riotPath };
+    });
+    handle('get-runtime-status', async () => {
+        let riotClientFound = false;
+        let riotSignatureValid = false;
+        try {
+            resolveValidatedRiotClient();
+            riotClientFound = true;
+            riotSignatureValid = true;
+        } catch {}
+        const activeSession = await queryRiotSession();
+        const runningProcess = GAME_PROCESSES.find(isProcessRunning) || '';
+        const runningGame = /leagueclient|league of legends/i.test(runningProcess) ? 'league_of_legends' : runningProcess ? 'valorant' : null;
+        return {
+            riotClientFound,
+            riotSignatureValid,
+            activeSession: activeSession ? { riotId: activeSession.riotId, region: activeSession.region } : null,
+            runningGame,
+            encryptionAvailable: safeStorage.isEncryptionAvailable(),
+            activeRequestId: operationGate.activeRequestId
+        };
+    });
+    handle('import-active-session', () => detectActiveRiotSession());
+    handle('start-play', ({ accountId } = {}) => {
+        const id = String(accountId || '');
+        if (!id) throw new Error('Cuenta no válida.');
+        const requestId = crypto.randomUUID();
+        const admission = operationGate.begin(requestId);
+        if (!admission.accepted) return admission;
+        startAccountSwitch(id, requestId);
+        updateTrayMenu();
+        return admission;
+    });
+    handle('get-activity-log', () => store.loadActivity());
+    handle('get-user-profile', () => store.loadProfile());
+    handle('save-user-profile', (rawProfile) => {
+        const current = store.loadProfile();
+        const username = String(rawProfile?.username || '').trim().slice(0, 40);
+        const profile = { username, createdAt: Number(current.createdAt) || Math.floor(Date.now() / 1000) };
+        store.saveProfile(profile);
+        return profile;
+    });
+
+    ipcMain.on('window-minimize', (event) => { assertTrustedSender(event); mainWindow?.minimize(); });
+    ipcMain.on('window-close', (event) => { assertTrustedSender(event); mainWindow?.close(); });
+}
+
+const packagedSmoke = process.argv.includes('--smoke-test');
+if (packagedSmoke) app.setPath('userData', path.join(app.getPath('temp'), `remswitcher-packaged-smoke-${process.pid}`));
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+    app.quit();
+} else {
+    app.on('second-instance', () => {
+        if (!mainWindow) return;
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.show();
+        mainWindow.focus();
+    });
+
+    app.whenReady().then(async () => {
+        if (packagedSmoke) {
+            await runPackagedSmoke();
+            app.exit(0);
+            return;
+        }
+        store = new JsonStore({ dataDir: APP_DATA_DIR, legacyDir: LEGACY_DATA_DIR, defaults: DEFAULT_SETTINGS });
+        registerIpc();
+        session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
+        createWindow();
+        setupTray();
+        const settings = normalizeSettings(store.loadSettings(), DEFAULT_SETTINGS);
+        app.setLoginItemSettings({ openAtLogin: settings.startWithWindows, path: process.execPath });
+    });
+}
+
+app.on('before-quit', () => { app.isQuitting = true; });
+app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin' && app.isQuitting) app.quit();
+});

@@ -1,0 +1,15 @@
+node_modules/
+.native-build/
+native/
+build/*
+!build/icon.ico
+!build/icon.png
+dist/
+release/
+installer/output/
+resources/*.dll
+resources/*.exe
+*.log
+*.tmp
+.DS_Store
+Thumbs.db

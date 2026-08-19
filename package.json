@@ -1,0 +1,71 @@
+{
+  "name": "remswitcher",
+  "version": "1.0.1",
+  "description": "RemSwitcher - gestor local privado de cuentas de Riot para Windows",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test",
+    "test:electron": "electron scripts/electron-smoke.js",
+    "test:packaged": "node scripts/packaged-smoke.js",
+    "test:dpapi": "electron scripts/dpapi-smoke.js",
+    "build:native": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-native.ps1",
+    "build:app": "electron-builder --win nsis portable --x64",
+    "build": "npm run build:native && npm run build:app",
+    "checksums": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/checksums.ps1",
+    "release": "npm test && npm run test:electron && npm run build && npm run test:packaged && npm run checksums"
+  },
+  "build": {
+    "appId": "com.antigravity.remswitcher",
+    "productName": "RemSwitcher",
+    "asar": true,
+    "compression": "maximum",
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": true
+    },
+    "nsis": {
+      "artifactName": "${productName}-Setup-${version}-${arch}.${ext}",
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "RemSwitcher",
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}-${arch}.${ext}"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "lib/**/*",
+      "renderer/**/*",
+      "build/icon.png",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "native/",
+        "to": "native",
+        "filter": ["**/*"]
+      }
+    ]
+  },
+  "keywords": ["remswitcher", "valorant", "league-of-legends", "account-manager", "riot-games"],
+  "author": "Antigravity",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "43.4.0",
+    "electron-builder": "26.15.3"
+  }
+}

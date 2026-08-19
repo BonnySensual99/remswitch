@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <title>RemSwitcher</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body data-theme="red">
+    <canvas id="bgCanvas" aria-hidden="true"></canvas>
+
+    <header class="titlebar">
+        <div class="brand-block">
+            <img src="logo.png" alt="" class="brand-logo">
+            <div><strong>REMSWITCHER</strong><span>LOCAL ACCOUNT OPS</span></div>
+        </div>
+
+        <nav class="nav-tabs" id="navTabs" aria-label="Navegación principal">
+            <button class="nav-tab active" data-tab="dashboard" aria-current="page" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6v-9h-6v9Zm0-16v5h6V4h-6Z"/></svg>
+                Centro
+            </button>
+            <button class="nav-tab" data-tab="accounts" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0H5Z"/></svg>
+                Cuentas
+            </button>
+            <button class="nav-tab" data-tab="settings" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m19.4 13 .1-1-.1-1 2-1.5-2-3.4-2.4 1a8 8 0 0 0-1.8-1L15 3.5h-4l-.3 2.6a8 8 0 0 0-1.8 1l-2.4-1-2 3.4 2 1.5-.1 1 .1 1-2 1.5 2 3.4 2.4-1a8 8 0 0 0 1.8 1l.3 2.6h4l.3-2.6a8 8 0 0 0 1.8-1l2.4 1 2-3.4-2-1.5ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/></svg>
+                Ajustes
+            </button>
+        </nav>
+
+        <div class="title-actions">
+            <div class="theme-picker" id="themePicker" aria-label="Tema visual">
+                <button class="theme-dot red active" data-theme="red" aria-label="Tema rojo" type="button"></button>
+                <button class="theme-dot cyan" data-theme="cyan" aria-label="Tema cian" type="button"></button>
+                <button class="theme-dot green" data-theme="green" aria-label="Tema verde" type="button"></button>
+                <button class="theme-dot purple" data-theme="purple" aria-label="Tema morado" type="button"></button>
+                <button class="theme-dot gold" data-theme="gold" aria-label="Tema dorado" type="button"></button>
+            </div>
+            <button class="user-pill" id="userPill" type="button" aria-label="Editar perfil local">
+                <span class="user-avatar" id="headerAvatar">R</span>
+                <span id="headerUsername">Operador</span>
+            </button>
+            <div class="window-controls">
+                <button id="btnMinimize" type="button" aria-label="Minimizar">—</button>
+                <button id="btnClose" class="danger" type="button" aria-label="Cerrar">×</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="app-shell">
+        <main class="main-content">
+            <section class="hero-row" aria-labelledby="pageTitle">
+                <div class="hero-copy">
+                    <span class="eyebrow">CONTROL CENTER // LOCAL</span>
+                    <h1 id="pageTitle">Escuadrón de cuentas</h1>
+                    <p id="pageSubtitle">Cambia entre Valorant y League of Legends sin sacar tus datos del equipo.</p>
+                </div>
+                <div class="hero-actions">
+                    <button class="btn primary" id="btnAdd" type="button">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z"/></svg>
+                        Añadir cuenta
+                    </button>
+                </div>
+            </section>
+
+            <section class="dashboard-brief" id="dashboardBrief" aria-labelledby="briefTitle">
+                <div class="brief-hero">
+                    <span class="eyebrow">OPERACIÓN ACTUAL</span>
+                    <h2 id="briefTitle">Listo para cambiar</h2>
+                    <p id="briefMessage">Selecciona una cuenta propia y RemSwitcher preparará Riot Client.</p>
+                    <div class="brief-actions">
+                        <button class="btn secondary small" id="btnQuickImport" type="button">Importar sesión</button>
+                    </div>
+                </div>
+                <div class="brief-metrics" aria-label="Resumen local">
+                    <div class="brief-metric"><span>CLIENTE</span><strong id="briefClient">Sin validar</strong><small id="briefClientNote">Detección local</small></div>
+                    <div class="brief-metric"><span>SESIÓN EN ESTE EQUIPO</span><strong id="briefSession">Sin sesión</strong><small id="briefSessionNote">No es presencia global</small></div>
+                    <div class="brief-metric"><span>JUEGO</span><strong id="briefGame">Cerrado</strong><small id="briefGameNote">No se cerrarán partidas</small></div>
+                </div>
+                <div class="quick-switch-heading"><div><span class="eyebrow">ACCESOS RÁPIDOS</span><h3>Comandos recientes</h3></div><button class="text-btn" id="btnViewAccounts" type="button">Ver todas las cuentas <span aria-hidden="true">→</span></button></div>
+                <div class="quick-switch-grid" id="quickSwitchList" aria-live="polite"></div>
+            </section>
+
+            <section class="command-bar" aria-label="Filtros de cuentas">
+                <div class="game-tabs" id="gameTabs">
+                    <button class="game-tab active" data-game="all" type="button">Todas <span id="countAll">0</span></button>
+                    <button class="game-tab" data-game="league_of_legends" type="button"><i class="game-mark lol">L</i> LoL <span id="countLol">0</span></button>
+                    <button class="game-tab" data-game="valorant" type="button"><i class="game-mark val">V</i> Valorant <span id="countVal">0</span></button>
+                </div>
+                <div class="command-actions">
+                    <label class="search-box" for="searchInput">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20 18.6-4.2-4.2a7 7 0 1 0-1.4 1.4l4.2 4.2 1.4-1.4ZM5 10a5 5 0 1 1 10 0 5 5 0 0 1-10 0Z"/></svg>
+                        <input id="searchInput" type="search" aria-label="Buscar cuentas" placeholder="Buscar cuenta…" autocomplete="off">
+                    </label>
+                    <button class="icon-btn" id="btnImport" type="button" aria-label="Importar sesión activa" title="Importar sesión activa">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3h2v10l3.5-3.5 1.4 1.4L12 16.8l-5.9-5.9 1.4-1.4L11 13V3Zm-6 16h14v2H5v-2Z"/></svg>
+                    </button>
+                </div>
+            </section>
+
+            <section class="accounts-scroll" id="accountsList" aria-live="polite"></section>
+
+        </main>
+
+        <aside class="sidebar">
+            <section class="sidebar-card operator-card">
+                <div class="library-heading"><div><span class="eyebrow">BIBLIOTECA LOCAL</span><h2>Mis cuentas</h2></div><span class="online-pill">LOCAL</span></div>
+                <div class="stats-grid">
+                    <div><strong id="statAccounts">0</strong><span>Cuentas</span></div>
+                    <div><strong id="statValorant">0</strong><span>Valorant</span></div>
+                    <div><strong id="statLol">0</strong><span>LoL</span></div>
+                </div>
+            </section>
+
+            <section class="sidebar-card system-card" aria-labelledby="systemTitle">
+                <div class="card-heading"><h2 id="systemTitle">Estado del sistema</h2><span class="pulse-dot"></span></div>
+                <div class="system-line"><span>Cifrado local</span><strong id="encryptionState">Comprobando</strong></div>
+                <div class="system-line"><span>Riot Client</span><strong id="riotState">Comprobando</strong></div>
+                <div class="system-line"><span>Sesión en este equipo</span><strong id="riotSessionState">Comprobando</strong></div>
+                <div class="system-line"><span>Juego abierto</span><strong id="gameProcessState">Comprobando</strong></div>
+                <div class="system-line"><span>Operación</span><strong id="operationState">Disponible</strong></div>
+            </section>
+
+            <section class="sidebar-card activity-card" aria-labelledby="activityTitle">
+                <div class="card-heading"><h2 id="activityTitle">Actividad confirmada</h2></div>
+                <div id="activityList" class="activity-list"></div>
+            </section>
+
+            <section class="disclaimer-card">
+                <strong>PROYECTO NO OFICIAL</strong>
+                <p>Uso privado con cuentas propias. Riot Games no patrocina ni respalda RemSwitcher.</p>
+            </section>
+        </aside>
+    </div>
+
+    <footer class="status-bar" id="statusBar" aria-live="polite">
+        <span class="status-indicator"></span>
+        <span id="statusText">Sistema preparado</span>
+        <span class="status-code" id="statusCode">READY</span>
+    </footer>
+
+    <div class="modal-overlay" id="accountModal" aria-hidden="true">
+        <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <header class="modal-header"><div><span class="eyebrow">CREDENTIAL VAULT</span><h2 id="modalTitle">Añadir cuenta</h2></div><button class="modal-close" id="btnCloseAccountModal" type="button" aria-label="Cerrar">×</button></header>
+            <form id="accountForm">
+                <input type="hidden" id="accId">
+                <div class="form-group full"><label for="accDisplayName">Nombre visible *</label><input id="accDisplayName" type="text" maxlength="60" required autocomplete="off" placeholder="Ej: Main EU"></div>
+                <div class="form-grid">
+                    <div class="form-group"><label for="accGame">Juego *</label><select id="accGame"><option value="valorant">Valorant</option><option value="league_of_legends">League of Legends</option></select></div>
+                    <div class="form-group"><label for="accRegion">Región *</label><select id="accRegion"><option value="EU">Europa</option><option value="NA">Norteamérica</option><option value="LATAM">LATAM</option><option value="KR">Corea</option><option value="AP">Asia-Pacífico</option><option value="BR">Brasil</option></select></div>
+                    <div class="form-group"><label for="accUsername">Usuario de inicio de sesión *</label><input id="accUsername" type="text" maxlength="80" required autocomplete="off" placeholder="Usuario privado de Riot"></div>
+                    <div class="form-group"><label for="accPassword">Contraseña *</label><div class="password-wrap"><input id="accPassword" type="password" maxlength="256" autocomplete="new-password" placeholder="Protegida con DPAPI"><button id="btnTogglePass" type="button" aria-label="Mostrar contraseña"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c5.5 0 9.5 5.3 9.5 7s-4 7-9.5 7S2.5 13.7 2.5 12 6.5 5 12 5Zm0 2c-3.8 0-6.8 3.3-7.4 5 .6 1.7 3.6 5 7.4 5s6.8-3.3 7.4-5c-.6-1.7-3.6-5-7.4-5Zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z"/></svg></button></div></div>
+                    <div class="form-group"><label for="accRiotId">Riot ID</label><input id="accRiotId" type="text" maxlength="80" placeholder="Nombre#TAG"></div>
+                    <div class="form-group"><label for="accRank">Rango</label><select id="accRank"></select></div>
+                    <div class="form-group"><label for="accLevel">Nivel / RR / LP</label><input id="accLevel" type="text" maxlength="40" placeholder="Ej: Nivel 189 · 94 RR"></div>
+                    <div class="form-group"><label for="accAvatar">Identidad visual</label><select id="accAvatar"></select></div>
+                </div>
+                <div class="form-group full"><label for="accNotes">Notas locales</label><textarea id="accNotes" maxlength="500" rows="2" placeholder="Skins, sensibilidad o recordatorios privados"></textarea></div>
+                <p class="security-note"><span>▣</span> La contraseña se cifra con la cuenta actual de Windows y nunca se envía a una nube.</p>
+                <footer class="modal-footer"><button class="btn secondary" id="btnCancelAccount" type="button">Cancelar</button><button class="btn primary" type="submit">Guardar cifrada</button></footer>
+            </form>
+        </section>
+    </div>
+
+    <div class="modal-overlay" id="settingsModal" aria-hidden="true">
+        <section class="modal-card settings-modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+            <header class="modal-header"><div><span class="eyebrow">SYSTEM CONFIG</span><h2 id="settingsTitle">Ajustes</h2></div><button class="modal-close" id="btnCloseSettingsModal" type="button" aria-label="Cerrar">×</button></header>
+            <form id="settingsForm">
+                <fieldset><legend>Inicio y ventana</legend>
+                    <label class="switch-row"><span><strong>Iniciar con Windows</strong><small>Abre RemSwitcher al iniciar sesión</small></span><input type="checkbox" id="setStartWithWindows"></label>
+                    <label class="switch-row"><span><strong>Minimizar a bandeja</strong><small>El botón cerrar mantendrá la app disponible</small></span><input type="checkbox" id="setMinimizeToTray"></label>
+                    <label class="switch-row"><span><strong>Cerrar tras lanzar</strong><small>Finaliza RemSwitcher al abrir el juego</small></span><input type="checkbox" id="setCloseOnLaunch"></label>
+                </fieldset>
+                <fieldset><legend>Seguridad y experiencia</legend>
+                    <label class="switch-row"><span><strong>Confirmar cambios</strong><small>Pide confirmación antes de cerrar Riot Client</small></span><input type="checkbox" id="setConfirmSwitch"></label>
+                    <label class="switch-row"><span><strong>Abrir juego automáticamente</strong><small>Inicia el juego elegido al confirmar la sesión</small></span><input type="checkbox" id="setAutoLaunchGame"></label>
+                    <label class="switch-row"><span><strong>Sonidos de interfaz</strong><small>Señales locales para acciones importantes</small></span><input type="checkbox" id="setSoundEnabled"></label>
+                    <label class="switch-row"><span><strong>Reducir movimiento</strong><small>Desactiva partículas y transiciones intensas</small></span><input type="checkbox" id="setReducedMotion"></label>
+                </fieldset>
+                <details class="advanced-settings"><summary>Automatización avanzada</summary>
+                    <div class="form-grid compact">
+                        <div class="form-group"><label for="setInitialDelay">Espera inicial (ms)</label><input type="number" id="setInitialDelay" min="300" max="10000" step="100"></div>
+                        <div class="form-group"><label for="setCharDelay">Retardo carácter (ms)</label><input type="number" id="setCharDelay" min="1" max="100" step="1"></div>
+                        <div class="form-group"><label for="setFieldDelay">Retardo campos (ms)</label><input type="number" id="setFieldDelay" min="50" max="1000" step="50"></div>
+                    </div>
+                    <div class="form-group full"><label for="setCustomRiotPath">Ruta personalizada de RiotClientServices.exe</label><input type="text" id="setCustomRiotPath" placeholder="Detección automática"><div class="test-row"><button class="btn secondary small" id="btnTestRiot" type="button">Comprobar cliente</button><span id="testRiotStatus"></span></div></div>
+                </details>
+                <footer class="modal-footer"><button class="btn secondary" id="btnCancelSettings" type="button">Cancelar</button><button class="btn primary" type="submit">Guardar ajustes</button></footer>
+            </form>
+        </section>
+    </div>
+
+    <div class="modal-overlay" id="profileModal" aria-hidden="true">
+        <section class="modal-card compact-modal" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
+            <header class="modal-header"><div><span class="eyebrow">LOCAL PROFILE</span><h2 id="profileTitle">Nombre del operador</h2></div><button class="modal-close" id="btnCloseProfileModal" type="button" aria-label="Cerrar">×</button></header>
+            <form id="profileForm"><div class="form-group full"><label for="inputProfileUsername">Nombre mostrado en este equipo</label><input id="inputProfileUsername" type="text" maxlength="40" required autocomplete="off" placeholder="Operador"></div><footer class="modal-footer"><button class="btn primary" type="submit">Guardar perfil</button></footer></form>
+        </section>
+    </div>
+
+    <div class="modal-overlay" id="confirmModal" aria-hidden="true">
+        <section class="modal-card compact-modal" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
+            <header class="modal-header"><div><span class="eyebrow">CONFIRM ACTION</span><h2 id="confirmTitle">Confirmar cambio</h2></div></header>
+            <p id="confirmMessage" class="confirm-message"></p>
+            <footer class="modal-footer"><button class="btn secondary" id="btnConfirmCancel" type="button">Cancelar</button><button class="btn primary" id="btnConfirmAccept" type="button">Cambiar cuenta</button></footer>
+        </section>
+    </div>
+
+    <div class="switch-overlay" id="switchOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="switchTitle" aria-describedby="switchMessage">
+        <section class="switch-panel">
+            <div class="switch-radar"><span></span></div>
+            <span class="eyebrow" id="switchGame">RIOT SESSION</span>
+            <p class="switch-target" id="switchTarget">Cuenta destino</p>
+            <div class="switch-context" aria-label="Origen y destino del cambio">
+                <div><small>ACTUAL</small><strong id="switchSource">Sin sesión</strong></div>
+                <span class="context-arrow" aria-hidden="true">→</span>
+                <div><small>DESTINO</small><strong id="switchDestination">Cuenta destino</strong></div>
+            </div>
+            <h2 id="switchTitle">Preparando operación</h2>
+            <p id="switchMessage">Comprobando el sistema…</p>
+            <div class="progress-track"><span id="switchProgress"></span></div>
+            <ol class="switch-steps" id="switchSteps">
+                <li data-state="CheckingRiotClient">Cliente</li><li data-state="LoggingOut">Sesión</li><li data-state="StartingRiotClient">Inicio</li><li data-state="Authenticating">Acceso</li><li data-state="WaitingForAuthentication">Verificación</li><li data-state="LaunchingGame">Juego</li>
+            </ol>
+            <div class="switch-actions">
+                <button class="btn secondary hidden" id="btnRetrySwitch" type="button">Reintentar</button>
+                <button class="btn secondary hidden" id="btnOpenRiot" type="button">Abrir Riot Client</button>
+                <button class="btn secondary hidden" id="btnManualLogout" type="button">Cerrar sesión manualmente</button>
+                <button class="btn secondary hidden" id="btnCloseSwitch" type="button">Cerrar</button>
+            </div>
+        </section>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="app.js"></script>
+</body>
+</html>
