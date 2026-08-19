@@ -88,6 +88,7 @@
                     <p id="briefMessage">Selecciona una cuenta propia y RemSwitcher preparará Riot Client.</p>
                     <div class="brief-actions">
                         <button class="btn secondary small" id="btnQuickImport" type="button">Importar sesión</button>
+                        <button class="btn secondary small" id="btnSyncLiveRank" type="button">Sincronizar rango</button>
                     </div>
                 </div>
                 <div class="brief-metrics" aria-label="Resumen local">
@@ -144,8 +145,8 @@
             </section>
 
             <section class="sidebar-card activity-card" aria-labelledby="activityTitle">
-                <div class="card-heading"><h2 id="activityTitle">Actividad confirmada</h2></div>
-                <div id="activityList" class="activity-list"></div>
+                <div class="card-heading"><h2 id="activityTitle">Registro local</h2><span class="badge-soft">SESIONES</span></div>
+                <div class="activity-list" id="activityList"></div>
             </section>
 
             <section class="disclaimer-card">
@@ -155,31 +156,32 @@
         </aside>
     </div>
 
-    <footer class="status-bar" id="statusBar" aria-live="polite">
-        <span class="status-indicator"></span>
-        <span id="statusText">Sistema preparado</span>
-        <span class="status-code" id="statusCode">READY</span>
-    </footer>
+    <div class="status-bar" id="statusBar">
+        <div class="status-left"><span class="status-indicator"></span><span id="statusText">Bóveda lista</span></div>
+        <div class="status-right"><span id="statusCode">LOCAL</span><span class="status-dot"></span><span id="queueState">Cola libre</span></div>
+    </div>
 
     <div class="modal-overlay" id="accountModal" aria-hidden="true">
         <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-            <header class="modal-header"><div><span class="eyebrow">CREDENTIAL VAULT</span><h2 id="modalTitle">Añadir cuenta</h2></div><button class="modal-close" id="btnCloseAccountModal" type="button" aria-label="Cerrar">×</button></header>
+            <header class="modal-header">
+                <div><span class="eyebrow" id="modalEyebrow">CREDENCIALES CIFRADAS</span><h2 id="modalTitle">Registrar cuenta</h2></div>
+                <button class="modal-close" id="btnCloseAccountModal" type="button" aria-label="Cerrar">×</button>
+            </header>
             <form id="accountForm">
                 <input type="hidden" id="accId">
-                <div class="form-group full"><label for="accDisplayName">Nombre visible *</label><input id="accDisplayName" type="text" maxlength="60" required autocomplete="off" placeholder="Ej: Main EU"></div>
                 <div class="form-grid">
-                    <div class="form-group"><label for="accGame">Juego *</label><select id="accGame"><option value="valorant">Valorant</option><option value="league_of_legends">League of Legends</option></select></div>
-                    <div class="form-group"><label for="accRegion">Región *</label><select id="accRegion"><option value="EU">Europa</option><option value="NA">Norteamérica</option><option value="LATAM">LATAM</option><option value="KR">Corea</option><option value="AP">Asia-Pacífico</option><option value="BR">Brasil</option></select></div>
-                    <div class="form-group"><label for="accUsername">Usuario de inicio de sesión *</label><input id="accUsername" type="text" maxlength="80" required autocomplete="off" placeholder="Usuario privado de Riot"></div>
-                    <div class="form-group"><label for="accPassword">Contraseña *</label><div class="password-wrap"><input id="accPassword" type="password" maxlength="256" autocomplete="new-password" placeholder="Protegida con DPAPI"><button id="btnTogglePass" type="button" aria-label="Mostrar contraseña"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c5.5 0 9.5 5.3 9.5 7s-4 7-9.5 7S2.5 13.7 2.5 12 6.5 5 12 5Zm0 2c-3.8 0-6.8 3.3-7.4 5 .6 1.7 3.6 5 7.4 5s6.8-3.3 7.4-5c-.6-1.7-3.6-5-7.4-5Zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z"/></svg></button></div></div>
-                    <div class="form-group"><label for="accRiotId">Riot ID</label><input id="accRiotId" type="text" maxlength="80" placeholder="Nombre#TAG"></div>
-                    <div class="form-group"><label for="accRank">Rango</label><select id="accRank"></select></div>
-                    <div class="form-group"><label for="accLevel">Nivel / RR / LP</label><input id="accLevel" type="text" maxlength="40" placeholder="Ej: Nivel 189 · 94 RR"></div>
-                    <div class="form-group"><label for="accAvatar">Identidad visual</label><select id="accAvatar"></select></div>
+                    <div class="form-group"><label for="accDisplayName">Nombre mostrado *</label><input type="text" id="accDisplayName" required placeholder="Mi Smurf EUW"></div>
+                    <div class="form-group"><label for="accGame">Juego principal *</label><select id="accGame"><option value="valorant">VALORANT</option><option value="league_of_legends">League of Legends</option></select></div>
+                    <div class="form-group"><label for="accRegion">Región *</label><select id="accRegion"><option value="EU">EU</option><option value="NA">NA</option><option value="LATAM">LATAM</option><option value="KR">KR</option><option value="AP">AP</option><option value="BR">BR</option></select></div>
+                    <div class="form-group"><label for="accUsername">Usuario de Riot *</label><input type="text" id="accUsername" required autocomplete="off" placeholder="Usuario privado"></div>
+                    <div class="form-group"><label for="accPassword" id="accPasswordLabel">Contraseña *</label><div class="password-wrap"><input type="password" id="accPassword" required autocomplete="new-password" placeholder="••••••••"><button id="btnTogglePass" type="button" aria-label="Mostrar contraseña"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c5.5 0 9.5 5.3 9.5 7s-4 7-9.5 7S2.5 13.7 2.5 12 6.5 5 12 5Zm0 2c-3.8 0-6.8 3.3-7.4 5 .6 1.7 3.6 5 7.4 5s6.8-3.3 7.4-5c-.6-1.7-3.6-5-7.4-5Zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z"/></svg></button></div><small class="form-hint" id="accPasswordHint">Se cifra con DPAPI en este equipo.</small></div>
+                    <div class="form-group"><label for="accRiotId">Riot ID</label><input type="text" id="accRiotId" placeholder="Nombre#TAG"></div>
+                    <div class="form-group"><label for="accRank">Rango competitivo</label><select id="accRank"></select></div>
+                    <div class="form-group"><label for="accLevel">Nivel</label><input type="number" id="accLevel" min="1" max="9999" placeholder="Nivel actual"></div>
+                    <div class="form-group"><label for="accAvatar">Icono del perfil</label><select id="accAvatar"></select></div>
+                    <div class="form-group full"><label for="accNotes">Notas privadas</label><textarea id="accNotes" rows="2" placeholder="Notas sobre la cuenta…"></textarea></div>
                 </div>
-                <div class="form-group full"><label for="accNotes">Notas locales</label><textarea id="accNotes" maxlength="500" rows="2" placeholder="Skins, sensibilidad o recordatorios privados"></textarea></div>
-                <p class="security-note"><span>▣</span> La contraseña se cifra con la cuenta actual de Windows y nunca se envía a una nube.</p>
-                <footer class="modal-footer"><button class="btn secondary" id="btnCancelAccount" type="button">Cancelar</button><button class="btn primary" type="submit">Guardar cifrada</button></footer>
+                <footer class="modal-footer"><button class="btn secondary" id="btnCancelAccount" type="button">Cancelar</button><button class="btn primary" type="submit">Guardar cuenta</button></footer>
             </form>
         </section>
     </div>
@@ -196,6 +198,8 @@
                 <fieldset><legend>Seguridad y experiencia</legend>
                     <label class="switch-row"><span><strong>Confirmar cambios</strong><small>Pide confirmación antes de cerrar Riot Client</small></span><input type="checkbox" id="setConfirmSwitch"></label>
                     <label class="switch-row"><span><strong>Abrir juego automáticamente</strong><small>Inicia el juego elegido al confirmar la sesión</small></span><input type="checkbox" id="setAutoLaunchGame"></label>
+                    <label class="switch-row"><span><strong>Cerrar juego al cambiar</strong><small>Cierra Valorant o LoL automáticamente para no bloquear el cambio</small></span><input type="checkbox" id="setAutoCloseRunningGames"></label>
+                    <label class="switch-row"><span><strong>Auto-sincronizar rango y nivel</strong><small>Detecta tu rango y nivel real mientras juegas</small></span><input type="checkbox" id="setAutoSyncRank"></label>
                     <label class="switch-row"><span><strong>Sonidos de interfaz</strong><small>Señales locales para acciones importantes</small></span><input type="checkbox" id="setSoundEnabled"></label>
                     <label class="switch-row"><span><strong>Reducir movimiento</strong><small>Desactiva partículas y transiciones intensas</small></span><input type="checkbox" id="setReducedMotion"></label>
                 </fieldset>
@@ -217,6 +221,7 @@
                         <div class="form-group"><label for="setCharDelay">Retardo carácter (ms)</label><input type="number" id="setCharDelay" min="1" max="100" step="1"></div>
                         <div class="form-group"><label for="setFieldDelay">Retardo campos (ms)</label><input type="number" id="setFieldDelay" min="50" max="1000" step="50"></div>
                     </div>
+                    <div class="form-group full"><label for="setGlobalShortcut">Atajo de teclado global (abrir / minimizar)</label><input type="text" id="setGlobalShortcut" placeholder="CommandOrControl+Alt+R"></div>
                     <div class="form-group full"><label for="setCustomRiotPath">Ruta personalizada de RiotClientServices.exe</label><input type="text" id="setCustomRiotPath" placeholder="Detección automática"><div class="test-row"><button class="btn secondary small" id="btnTestRiot" type="button">Comprobar cliente</button><span id="testRiotStatus"></span></div></div>
                 </details>
                 <footer class="modal-footer"><button class="btn secondary" id="btnCancelSettings" type="button">Cancelar</button><button class="btn primary" type="submit">Guardar ajustes</button></footer>
@@ -256,6 +261,7 @@
                 <li data-state="CheckingRiotClient">Cliente</li><li data-state="LoggingOut">Sesión</li><li data-state="StartingRiotClient">Inicio</li><li data-state="Authenticating">Acceso</li><li data-state="WaitingForAuthentication">Verificación</li><li data-state="LaunchingGame">Juego</li>
             </ol>
             <div class="switch-actions">
+                <button class="btn secondary hidden" id="btnForceCloseGame" type="button">Cerrar juego y continuar</button>
                 <button class="btn secondary hidden" id="btnRetrySwitch" type="button">Reintentar</button>
                 <button class="btn secondary hidden" id="btnOpenRiot" type="button">Abrir Riot Client</button>
                 <button class="btn secondary hidden" id="btnManualLogout" type="button">Cerrar sesión manualmente</button>

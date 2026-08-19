@@ -725,7 +725,7 @@ async function beginSwitch(account, targetGame = null) {
 }
 
 function resetSwitchActions() {
-    ['btnRetrySwitch', 'btnOpenRiot', 'btnManualLogout', 'btnCloseSwitch'].forEach((id) => $(id).classList.add('hidden'));
+    ['btnRetrySwitch', 'btnOpenRiot', 'btnManualLogout', 'btnCloseSwitch', 'btnForceCloseGame'].forEach((id) => $(id).classList.add('hidden'));
 }
 
 function showSwitchOverlay(game, account = null) {
@@ -786,6 +786,9 @@ function updateSwitchState(payload) {
         panel.classList.add(state === 'Done' ? 'done' : ['ManualActionRequired', 'Timeout'].includes(state) ? 'manual' : 'error');
         $('btnCloseSwitch').classList.remove('hidden');
         if (state === 'WrongPassword' || state === 'Timeout' || state === 'Error') $('btnRetrySwitch').classList.remove('hidden');
+        if (payload.errorCode === 'GAME_RUNNING') {
+            $('btnForceCloseGame').classList.remove('hidden');
+        }
         if (state === 'ManualActionRequired' || state === 'Timeout') {
             $('btnOpenRiot').classList.remove('hidden');
             $('btnManualLogout').classList.remove('hidden');
@@ -812,12 +815,15 @@ async function refreshAfterSwitch() {
 
 async function openSettings() {
     if (!rendererApi) {
-        settings ||= { startWithWindows: false, minimizeToTray: true, closeOnLaunch: false, confirmSwitch: true, autoLaunchGame: true, soundEnabled: true, reducedMotion: false, initialDelayMs: 1800, charDelayMs: 15, fieldDelayMs: 200, customRiotPath: '' };
+        settings ||= { startWithWindows: false, minimizeToTray: true, closeOnLaunch: false, confirmSwitch: true, autoLaunchGame: true, autoCloseRunningGames: true, autoSyncRank: true, globalShortcut: 'CommandOrControl+Alt+R', soundEnabled: true, reducedMotion: false, initialDelayMs: 1800, charDelayMs: 15, fieldDelayMs: 200, customRiotPath: '' };
         $('setStartWithWindows').checked = settings.startWithWindows;
         $('setMinimizeToTray').checked = settings.minimizeToTray;
         $('setCloseOnLaunch').checked = settings.closeOnLaunch;
         $('setConfirmSwitch').checked = settings.confirmSwitch;
         $('setAutoLaunchGame').checked = settings.autoLaunchGame;
+        $('setAutoCloseRunningGames').checked = settings.autoCloseRunningGames !== false;
+        $('setAutoSyncRank').checked = settings.autoSyncRank !== false;
+        $('setGlobalShortcut').value = settings.globalShortcut || 'CommandOrControl+Alt+R';
         $('setSoundEnabled').checked = settings.soundEnabled;
         $('setReducedMotion').checked = settings.reducedMotion;
         $('setInitialDelay').value = settings.initialDelayMs;
@@ -837,6 +843,9 @@ async function openSettings() {
         $('setCloseOnLaunch').checked = settings.closeOnLaunch;
         $('setConfirmSwitch').checked = settings.confirmSwitch;
         $('setAutoLaunchGame').checked = settings.autoLaunchGame;
+        $('setAutoCloseRunningGames').checked = settings.autoCloseRunningGames !== false;
+        $('setAutoSyncRank').checked = settings.autoSyncRank !== false;
+        $('setGlobalShortcut').value = settings.globalShortcut || 'CommandOrControl+Alt+R';
         $('setSoundEnabled').checked = settings.soundEnabled;
         $('setReducedMotion').checked = settings.reducedMotion;
         $('setInitialDelay').value = settings.initialDelayMs;
@@ -884,6 +893,9 @@ async function saveSettings(event) {
             closeOnLaunch: $('setCloseOnLaunch').checked,
             confirmSwitch: $('setConfirmSwitch').checked,
             autoLaunchGame: $('setAutoLaunchGame').checked,
+            autoCloseRunningGames: $('setAutoCloseRunningGames').checked,
+            autoSyncRank: $('setAutoSyncRank').checked,
+            globalShortcut: $('setGlobalShortcut').value,
             soundEnabled: $('setSoundEnabled').checked,
             reducedMotion: $('setReducedMotion').checked,
             initialDelayMs: $('setInitialDelay').value,
@@ -969,6 +981,56 @@ function bindEvents() {
         try { await rendererApi.openRiotClient(); showToast('Cierra sesión en Riot Client y pulsa Reintentar.'); }
         catch (error) { showToast(error.message || 'No se pudo abrir Riot Client.', 'error'); }
     });
+    $('btnForceCloseGame').addEventListener('click', async () => {
+        $('btnForceCloseGame').disabled = true;
+        showToast('Cerrando procesos de juego…');
+        try {
+            await rendererApi.forceCloseGames();
+            showToast('Juegos cerrados. Reanudando cambio…');
+            if (lastSwitchAccount) {
+                beginSwitch(lastSwitchAccount);
+            }
+        } catch (error) {
+            showToast(error.message || 'Error al cerrar el juego.', 'error');
+        } finally {
+            $('btnForceCloseGame').disabled = false;
+        }
+    });
+
+    $('btnSyncLiveRank').addEventListener('click', async () => {
+        $('btnSyncLiveRank').disabled = true;
+        showToast('Consultando rango en vivo con Riot Client…');
+        try {
+            const res = await rendererApi.syncLiveRank();
+            if (res && res.synced) {
+                showToast(`✓ Rango sincronizado: ${res.account?.rank || 'Actualizado'}`, 'success');
+                refreshAfterSwitch();
+            } else {
+                showToast('No se detectó sesión activa de Riot para sincronizar.');
+            }
+        } catch (err) {
+            showToast(err.message || 'Error al sincronizar rango.', 'error');
+        } finally {
+            $('btnSyncLiveRank').disabled = false;
+        }
+    });
+
+    if (rendererApi?.onGlobalShortcut) {
+        rendererApi.onGlobalShortcut(() => {
+            elements.searchInput.focus();
+            elements.searchInput.select();
+            showToast('Búsqueda rápida activada.');
+        });
+    }
+
+    if (rendererApi?.onAccountsUpdated) {
+        rendererApi.onAccountsUpdated((updatedAccounts) => {
+            if (Array.isArray(updatedAccounts)) {
+                accounts = updatedAccounts;
+                renderAccounts();
+            }
+        });
+    }
 
     $('accountForm').addEventListener('submit', saveAccount);
     $('settingsForm').addEventListener('submit', saveSettings);
@@ -1021,7 +1083,13 @@ function bindEvents() {
         if (event.key === 'Escape') {
             if (openModal === elements.confirmModal) settleConfirmation(false);
             else if (openModal) hideModal(openModal);
-            else if (elements.switchOverlay.classList.contains('active') && !activeRequestId) closeSwitchOverlay();
+            else if (elements.switchOverlay.classList.contains('active')) closeSwitchOverlay();
+        } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
+            if (!openModal) {
+                event.preventDefault();
+                elements.searchInput.focus();
+                elements.searchInput.select();
+            }
         }
     });
     document.addEventListener('click', (event) => {

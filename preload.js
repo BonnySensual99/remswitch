@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld('api', Object.freeze({
     openRiotClient: () => ipcRenderer.invoke('open-riot-client'),
 
     importActiveSession: () => ipcRenderer.invoke('import-active-session'),
+    forceCloseGames: () => ipcRenderer.invoke('force-close-games'),
+    syncLiveRank: () => ipcRenderer.invoke('sync-live-rank'),
     startPlay: (accountId, targetGame) => ipcRenderer.invoke('start-play', { accountId, targetGame }),
 
     getActivityLog: () => ipcRenderer.invoke('get-activity-log'),
@@ -31,6 +33,20 @@ contextBridge.exposeInMainWorld('api', Object.freeze({
 
     minimizeWindow: () => ipcRenderer.send('window-minimize'),
     closeWindow: () => ipcRenderer.send('window-close'),
+
+    onGlobalShortcut: (callback) => {
+        if (typeof callback !== 'function') return () => {};
+        const listener = (_event, payload) => callback(payload);
+        ipcRenderer.on('global-shortcut-focus', listener);
+        return () => ipcRenderer.removeListener('global-shortcut-focus', listener);
+    },
+
+    onAccountsUpdated: (callback) => {
+        if (typeof callback !== 'function') return () => {};
+        const listener = (_event, payload) => callback(payload);
+        ipcRenderer.on('accounts-updated', listener);
+        return () => ipcRenderer.removeListener('accounts-updated', listener);
+    },
 
     onSwitchState: (callback) => {
         if (typeof callback !== 'function') return () => {};

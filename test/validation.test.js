@@ -32,3 +32,14 @@ test('limita los tiempos de automatización a rangos seguros', () => {
 test('migra autoLaunchValorant al ajuste común de juego', () => {
     assert.equal(normalizeSettings({ autoLaunchValorant: false }, defaults).autoLaunchGame, false);
 });
+
+test('normaliza opciones de autocierre, sync de rango y atajo global', () => {
+    const settings = normalizeSettings({
+        autoCloseRunningGames: false,
+        autoSyncRank: true,
+        globalShortcut: 'Ctrl+Shift+R'
+    }, defaults);
+    assert.equal(settings.autoCloseRunningGames, false);
+    assert.equal(settings.autoSyncRank, true);
+    assert.equal(settings.globalShortcut, 'Ctrl+Shift+R');
+});

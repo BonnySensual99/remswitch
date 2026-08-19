@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, safeStorage, session } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, safeStorage, session, globalShortcut } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
@@ -10,7 +10,7 @@ const { decryptFromCandidates } = require('./lib/legacy-safe-storage');
 const { runBridge } = require('./lib/bridge-runner');
 const { OperationGate } = require('./lib/operation-gate');
 const { launchDetached } = require('./lib/process-launcher');
-const { queryRiotSession, logoutRiotSession } = require('./lib/riot-session');
+const { queryRiotSession, queryLiveRankAndStats, logoutRiotSession } = require('./lib/riot-session');
 
 const APP_DATA_DIR = path.join(process.env.LOCALAPPDATA || app.getPath('appData'), 'RemSwitcher');
 const LEGACY_DATA_DIR = path.join(process.env.LOCALAPPDATA || app.getPath('appData'), 'ValorantAccountManager');
@@ -21,6 +21,9 @@ const DEFAULT_SETTINGS = Object.freeze({
     startWithWindows: false,
     minimizeToTray: true,
     autoLaunchGame: true,
+    autoCloseRunningGames: true,
+    autoSyncRank: true,
+    globalShortcut: 'CommandOrControl+Alt+R',
     closeOnLaunch: false,
     confirmSwitch: true,
     soundEnabled: true,
@@ -216,6 +219,39 @@ async function terminateRiotProcesses() {
     return false;
 }
 
+async function terminateGameProcesses() {
+    const running = GAME_PROCESSES.filter(isProcessRunning);
+    if (!running.length) return true;
+    try {
+        const args = ['/F', '/T'];
+        for (const processName of running) args.push('/IM', processName);
+        execFileSync('taskkill.exe', args, { stdio: 'ignore', windowsHide: true, timeout: 8000 });
+    } catch {}
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (!GAME_PROCESSES.some(isProcessRunning)) return true;
+        await delay(200);
+    }
+    return false;
+}
+
+function updateGlobalShortcut(shortcutKey) {
+    try {
+        globalShortcut.unregisterAll();
+        if (!shortcutKey) return;
+        globalShortcut.register(shortcutKey, () => {
+            if (!mainWindow || mainWindow.isDestroyed()) return;
+            if (mainWindow.isVisible() && mainWindow.isFocused()) {
+                mainWindow.minimize();
+            } else {
+                showMainWindow();
+                mainWindow.webContents.send('global-shortcut-focus');
+            }
+        });
+    } catch (error) {
+        log('WARN', `Error registrando atajo global (${shortcutKey}): ${error.message}`);
+    }
+}
+
 function getBridgeExePath() {
     const candidates = [
         path.join(process.resourcesPath, 'native', 'RiotManagerBridge.exe'),
@@ -270,7 +306,15 @@ async function startAccountSwitch(accountId, requestId, targetGame = null) {
 
         emitSwitch({ ...payloadBase, state: 'CheckingRiotClient', message: 'Comprobando Riot Client…' });
         const runningGame = GAME_PROCESSES.find(isProcessRunning);
-        if (runningGame) throw Object.assign(new Error('Cierra el juego antes de cambiar de cuenta.'), { code: 'GAME_RUNNING' });
+        if (runningGame) {
+            if (settings.autoCloseRunningGames) {
+                emitSwitch({ ...payloadBase, state: 'CheckingRiotClient', message: `Cerrando ${runningGame} para cambiar de cuenta…` });
+                const closed = await terminateGameProcesses();
+                if (!closed) throw Object.assign(new Error(`No se pudo cerrar el juego (${runningGame}).`), { code: 'GAME_CLOSE_FAILED' });
+            } else {
+                throw Object.assign(new Error('Cierra el juego antes de cambiar de cuenta.'), { code: 'GAME_RUNNING' });
+            }
+        }
 
         const riotPath = resolveValidatedRiotClient();
         const bridgePath = getBridgeExePath();
@@ -743,11 +787,42 @@ function registerIpc() {
         updateTrayMenu();
         return accounts.map(toPublicAccount);
     });
+    async function syncAccountsWithLiveRank() {
+        try {
+            const liveStats = await queryLiveRankAndStats();
+            if (!liveStats || !liveStats.riotId) return null;
+            const currentAccounts = store.loadAccounts();
+            const matched = currentAccounts.find((acc) => acc.riotId && acc.riotId.toLowerCase() === liveStats.riotId.toLowerCase());
+            if (!matched) return null;
+            let changed = false;
+            if (liveStats.rank && matched.rank !== liveStats.rank) {
+                matched.rank = liveStats.rank;
+                changed = true;
+            }
+            if (liveStats.level && matched.level !== liveStats.level) {
+                matched.level = liveStats.level;
+                changed = true;
+            }
+            if (changed) {
+                store.saveAccounts(currentAccounts);
+                if (mainWindow && !mainWindow.isDestroyed()) {
+                    mainWindow.webContents.send('accounts-updated', store.loadPublicAccounts());
+                }
+                log('INFO', `Live sync: rango actualizado para ${matched.displayName} -> ${matched.rank} (${matched.level ? `Nvl. ${matched.level}` : ''})`);
+            }
+            return { synced: true, account: toPublicAccount(matched) };
+        } catch (err) {
+            log('WARN', `Error en sync de rango en vivo: ${err.message}`);
+            return null;
+        }
+    }
+
     handle('get-settings', () => normalizeSettings(store.loadSettings(), DEFAULT_SETTINGS));
     handle('save-settings', (rawSettings) => {
         const settings = normalizeSettings(rawSettings, DEFAULT_SETTINGS);
         if (settings.customRiotPath) validateRiotExecutable(settings.customRiotPath, true);
         store.saveSettings(settings);
+        updateGlobalShortcut(settings.globalShortcut);
         app.setLoginItemSettings({ openAtLogin: settings.startWithWindows, path: process.execPath });
         return settings;
     });
@@ -775,6 +850,10 @@ function registerIpc() {
         } catch {}
         const activeSession = await queryRiotSession();
         updateTrayMenu(activeSession);
+        const settings = normalizeSettings(store.loadSettings(), DEFAULT_SETTINGS);
+        if (settings.autoSyncRank && activeSession) {
+            syncAccountsWithLiveRank().catch(() => {});
+        }
         const runningProcess = GAME_PROCESSES.find(isProcessRunning) || '';
         const runningGame = /leagueclient|league of legends/i.test(runningProcess) ? 'league_of_legends' : runningProcess ? 'valorant' : null;
         return {
@@ -787,6 +866,14 @@ function registerIpc() {
         };
     });
     handle('import-active-session', () => detectActiveRiotSession());
+    handle('force-close-games', async () => {
+        const closed = await terminateGameProcesses();
+        return { closed };
+    });
+    handle('sync-live-rank', async () => {
+        const result = await syncAccountsWithLiveRank();
+        return result || { synced: false };
+    });
     handle('start-play', ({ accountId, targetGame } = {}) => {
         const id = String(accountId || '');
         if (!id) throw new Error('Cuenta no válida.');
@@ -859,10 +946,14 @@ if (!gotTheLock) {
             }, 6000);
         }
         const settings = normalizeSettings(store.loadSettings(), DEFAULT_SETTINGS);
+        updateGlobalShortcut(settings.globalShortcut);
         app.setLoginItemSettings({ openAtLogin: settings.startWithWindows, path: process.execPath });
     });
 }
 
+app.on('will-quit', () => {
+    globalShortcut.unregisterAll();
+});
 app.on('before-quit', () => { app.isQuitting = true; });
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
