@@ -34,6 +34,7 @@ const DEFAULT_SETTINGS = Object.freeze({
     charDelayMs: 15,
     fieldDelayMs: 200,
     autoPlayTabs: 19,
+    autoPlayTabDelayMs: 50,
     customRiotPath: ''
 });
 
@@ -380,7 +381,8 @@ $tabs = ${settings.autoPlayTabs ?? 23}
 if ($tabs -gt 0) {
     for ($i=0; $i -lt $tabs; $i++) {
         [System.Windows.Forms.SendKeys]::SendWait("{TAB}")
-        Start-Sleep -Milliseconds 100
+        $delay = ${settings.autoPlayTabDelayMs ?? 50}
+        if ($delay -gt 0) { Start-Sleep -Milliseconds $delay }
     }
     Start-Sleep -Milliseconds 200
     [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")
@@ -464,7 +466,8 @@ $tabs = ${settings.autoPlayTabs ?? 23}
 if ($tabs -gt 0) {
     for ($i=0; $i -lt $tabs; $i++) {
         [System.Windows.Forms.SendKeys]::SendWait("{TAB}")
-        Start-Sleep -Milliseconds 100
+        $delay = ${settings.autoPlayTabDelayMs ?? 50}
+        if ($delay -gt 0) { Start-Sleep -Milliseconds $delay }
     }
     Start-Sleep -Milliseconds 200
     [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")
