@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+﻿﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -135,94 +135,132 @@
         </section>
     </div>
 
-    <div class="modal-overlay" id="settingsModal" aria-hidden="true">
+        <div class="modal-overlay" id="settingsModal" aria-hidden="true">
         <section class="modal-card settings-modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-            <header class="modal-header"><div><span class="eyebrow">SYSTEM CONFIG</span><h2 id="settingsTitle">Ajustes</h2></div><button class="modal-close" id="btnCloseSettingsModal" type="button" aria-label="Cerrar">×</button></header>
+            <header class="modal-header">
+                <div><span class="eyebrow">SYSTEM CONFIG</span><h2 id="settingsTitle">Ajustes</h2></div>
+                <button class="modal-close" id="btnCloseSettingsModal" type="button" aria-label="Cerrar">×</button>
+            </header>
+            
             <form id="settingsForm">
-                <fieldset><legend>Inicio y ventana</legend>
-                    <label class="switch-row"><span><strong>Iniciar con Windows</strong><small>Abre RemSwitcher al iniciar sesión</small></span><input type="checkbox" id="setStartWithWindows"></label>
-                    <label class="switch-row"><span><strong>Minimizar a bandeja</strong><small>El botón cerrar mantendrá la app disponible</small></span><input type="checkbox" id="setMinimizeToTray"></label>
-                    <label class="switch-row"><span><strong>Cerrar tras lanzar</strong><small>Finaliza RemSwitcher al abrir el juego</small></span><input type="checkbox" id="setCloseOnLaunch"></label>
-                </fieldset>
-                <fieldset><legend>Seguridad y experiencia</legend>
-                    <label class="switch-row"><span><strong>Confirmar cambios</strong><small>Pide confirmación antes de cerrar Riot Client</small></span><input type="checkbox" id="setConfirmSwitch"></label>
-                    <label class="switch-row"><span><strong>Abrir juego automáticamente</strong><small>Inicia el juego elegido al confirmar la sesión</small></span><input type="checkbox" id="setAutoLaunchGame"></label>
-                    <label class="switch-row"><span><strong>Cerrar juego al cambiar</strong><small>Cierra Valorant o LoL automáticamente para no bloquear el cambio</small></span><input type="checkbox" id="setAutoCloseRunningGames"></label>
-                    <label class="switch-row"><span><strong>Auto-sincronizar rango y nivel</strong><small>Detecta tu rango y nivel real mientras juegas</small></span><input type="checkbox" id="setAutoSyncRank"></label>
-                    <label class="switch-row"><span><strong>Sonidos de interfaz</strong><small>Señales locales para acciones importantes</small></span><input type="checkbox" id="setSoundEnabled"></label>
-                    <label class="switch-row"><span><strong>Reducir movimiento</strong><small>Desactiva partículas y transiciones intensas</small></span><input type="checkbox" id="setReducedMotion"></label>
-                </fieldset>
-                <fieldset class="shortcuts-fieldset"><legend>Atajos de teclado</legend>
-                    <div class="shortcut-list">
-                        <div class="shortcut-item">
-                            <div class="shortcut-desc">
-                                <strong>Atajo global (abrir / minimizar)</strong>
-                                <small>Accesible desde cualquier ventana o juego</small>
-                            </div>
-                            <div class="shortcut-input-wrap">
-                                <input type="text" id="setGlobalShortcut" placeholder="CommandOrControl+Alt+R" class="shortcut-input">
+                <div class="settings-layout">
+                    <!-- Sidebar Tabs -->
+                    <nav class="settings-sidebar" aria-label="Pestañas de ajustes">
+                        <button type="button" class="settings-tab-btn active" data-tab="tab-general">General</button>
+                        <button type="button" class="settings-tab-btn" data-tab="tab-experiencia">Juego y Experiencia</button>
+                        <button type="button" class="settings-tab-btn" data-tab="tab-atajos">Atajos</button>
+                        <button type="button" class="settings-tab-btn" data-tab="tab-avanzado">Avanzado</button>
+                        <button type="button" class="settings-tab-btn" data-tab="tab-actualizaciones">Actualizaciones</button>
+                    </nav>
+
+                    <!-- Tab Contents -->
+                    <div class="settings-content">
+                        <!-- Pestaña: General -->
+                        <div class="settings-panel active" id="tab-general">
+                            <h3>Inicio y ventana</h3>
+                            <label class="switch-row"><span><strong>Iniciar con Windows</strong><small>Abre RemSwitcher al iniciar sesión</small></span><input type="checkbox" id="setStartWithWindows"></label>
+                            <label class="switch-row"><span><strong>Minimizar a bandeja</strong><small>El botón cerrar mantendrá la app disponible</small></span><input type="checkbox" id="setMinimizeToTray"></label>
+                            <label class="switch-row"><span><strong>Cerrar tras lanzar</strong><small>Finaliza RemSwitcher al abrir el juego</small></span><input type="checkbox" id="setCloseOnLaunch"></label>
+                            
+                            <h3 style="margin-top:20px;">Seguridad</h3>
+                            <label class="switch-row"><span><strong>Confirmar cambios</strong><small>Pide confirmación antes de cerrar Riot Client</small></span><input type="checkbox" id="setConfirmSwitch"></label>
+                        </div>
+
+                        <!-- Pestaña: Experiencia -->
+                        <div class="settings-panel" id="tab-experiencia">
+                            <h3>Comportamiento</h3>
+                            <label class="switch-row"><span><strong>Abrir juego automáticamente</strong><small>Inicia el juego elegido al confirmar la sesión</small></span><input type="checkbox" id="setAutoLaunchGame"></label>
+                            <label class="switch-row"><span><strong>Cerrar juego al cambiar</strong><small>Cierra Valorant o LoL automáticamente para no bloquear el cambio</small></span><input type="checkbox" id="setAutoCloseRunningGames"></label>
+                            <label class="switch-row"><span><strong>Auto-sincronizar rango y nivel</strong><small>Detecta tu rango y nivel real mientras juegas</small></span><input type="checkbox" id="setAutoSyncRank"></label>
+                            
+                            <h3 style="margin-top:20px;">Interfaz</h3>
+                            <label class="switch-row"><span><strong>Sonidos de interfaz</strong><small>Señales locales para acciones importantes</small></span><input type="checkbox" id="setSoundEnabled"></label>
+                            <label class="switch-row"><span><strong>Reducir movimiento</strong><small>Desactiva partículas y transiciones intensas</small></span><input type="checkbox" id="setReducedMotion"></label>
+                        </div>
+
+                        <!-- Pestaña: Atajos -->
+                        <div class="settings-panel" id="tab-atajos">
+                            <div class="shortcut-list">
+                                <div class="shortcut-item">
+                                    <div class="shortcut-desc">
+                                        <strong>Atajo global (abrir / minimizar)</strong>
+                                        <small>Accesible desde cualquier ventana o juego</small>
+                                    </div>
+                                    <div class="shortcut-input-wrap">
+                                        <input type="text" id="setGlobalShortcut" placeholder="CommandOrControl+Alt+R" class="shortcut-input">
+                                    </div>
+                                </div>
+                                <div class="shortcut-item static">
+                                    <div class="shortcut-desc">
+                                        <strong>Búsqueda rápida</strong>
+                                        <small>Enfoca el buscador de cuentas</small>
+                                    </div>
+                                    <div class="shortcut-keys"><kbd>Ctrl</kbd> + <kbd>F</kbd> <span class="or-sep">/</span> <kbd>/</kbd></div>
+                                </div>
+                                <div class="shortcut-item static">
+                                    <div class="shortcut-desc">
+                                        <strong>Añadir nueva cuenta</strong>
+                                        <small>Abre el modal de registro</small>
+                                    </div>
+                                    <div class="shortcut-keys"><kbd>Ctrl</kbd> + <kbd>N</kbd></div>
+                                </div>
+                                <div class="shortcut-item static">
+                                    <div class="shortcut-desc">
+                                        <strong>Abrir Ajustes</strong>
+                                        <small>Abre este menú de opciones</small>
+                                    </div>
+                                    <div class="shortcut-keys"><kbd>Ctrl</kbd> + <kbd>,</kbd></div>
+                                </div>
+                                <div class="shortcut-item static">
+                                    <div class="shortcut-desc">
+                                        <strong>Cerrar modal / Cancelar</strong>
+                                        <small>Vuelve a la pantalla principal</small>
+                                    </div>
+                                    <div class="shortcut-keys"><kbd>Esc</kbd></div>
+                                </div>
                             </div>
                         </div>
-                        <div class="shortcut-item static">
-                            <div class="shortcut-desc">
-                                <strong>Búsqueda rápida</strong>
-                                <small>Enfoca el buscador de cuentas</small>
+
+                        <!-- Pestaña: Avanzado -->
+                        <div class="settings-panel" id="tab-avanzado">
+                            <h3>Escritura de credenciales (Inicio de sesión)</h3>
+                            <div class="form-grid compact">
+                                <div class="form-group"><label for="setInitialDelay">Espera inicial (ms)</label><input type="number" id="setInitialDelay" min="300" max="10000" step="100"></div>
+                                <div class="form-group"><label for="setCharDelay">Retardo carácter (ms)</label><input type="number" id="setCharDelay" min="1" max="100" step="1"></div>
+                                <div class="form-group"><label for="setFieldDelay">Retardo campos (ms)</label><input type="number" id="setFieldDelay" min="50" max="1000" step="50"></div>
                             </div>
-                            <div class="shortcut-keys"><kbd>Ctrl</kbd> + <kbd>F</kbd> <span class="or-sep">/</span> <kbd>/</kbd></div>
+                            
+                            <h3 style="margin-top:20px;">Arranque del juego (Autoclick Play)</h3>
+                            <div class="form-grid compact">
+                                <div class="form-group"><label for="setAutoPlayPreDelayMs">Espera inicial TABs (ms)</label><input type="number" id="setAutoPlayPreDelayMs" min="100" max="5000" step="100" title="Tiempo de espera antes de empezar a pulsar TAB"></div>
+                                <div class="form-group"><label for="setAutoPlayTabs">Autoclick TABs</label><input type="number" id="setAutoPlayTabs" min="0" max="50" step="1" title="Número de TABs para el botón Play"></div>
+                                <div class="form-group"><label for="setAutoPlayTabDelayMs">Retardo TABs (ms)</label><input type="number" id="setAutoPlayTabDelayMs" min="0" max="500" step="10" title="Tiempo de espera entre pulsaciones de TAB"></div>
+                            </div>
+                            
+                            <h3 style="margin-top:20px;">Sistema</h3>
+                            <div class="form-group full"><label for="setCustomRiotPath">Ruta personalizada de RiotClientServices.exe</label><input type="text" id="setCustomRiotPath" placeholder="Detección automática"><div class="test-row"><button class="btn secondary small" id="btnTestRiot" type="button">Comprobar cliente</button><span id="testRiotStatus"></span></div></div>
                         </div>
-                        <div class="shortcut-item static">
-                            <div class="shortcut-desc">
-                                <strong>Añadir nueva cuenta</strong>
-                                <small>Abre el modal de registro</small>
+
+                        <!-- Pestaña: Actualizaciones -->
+                        <div class="settings-panel" id="tab-actualizaciones">
+                            <div class="update-row">
+                                <div>
+                                    <strong>Versión actual: <span id="appVersionLabel">1.0.1</span></strong>
+                                    <small id="updateStatusText">Comprobación automática activada</small>
+                                </div>
+                                <div class="update-actions">
+                                    <button class="btn secondary small" id="btnCheckUpdates" type="button">Buscar actualizaciones</button>
+                                    <button class="btn primary small hidden" id="btnInstallUpdate" type="button">Reiniciar y actualizar</button>
+                                </div>
                             </div>
-                            <div class="shortcut-keys"><kbd>Ctrl</kbd> + <kbd>N</kbd></div>
-                        </div>
-                        <div class="shortcut-item static">
-                            <div class="shortcut-desc">
-                                <strong>Abrir Ajustes</strong>
-                                <small>Abre este menú de opciones</small>
-                            </div>
-                            <div class="shortcut-keys"><kbd>Ctrl</kbd> + <kbd>,</kbd></div>
-                        </div>
-                        <div class="shortcut-item static">
-                            <div class="shortcut-desc">
-                                <strong>Cerrar modal / Cancelar</strong>
-                                <small>Vuelve a la pantalla principal</small>
-                            </div>
-                            <div class="shortcut-keys"><kbd>Esc</kbd></div>
                         </div>
                     </div>
-                </fieldset>
-                <fieldset><legend>Actualizaciones</legend>
-                    <div class="update-row">
-                        <div>
-                            <strong>Versión actual: <span id="appVersionLabel">1.0.1</span></strong>
-                            <small id="updateStatusText">Comprobación automática activada</small>
-                        </div>
-                        <div class="update-actions">
-                            <button class="btn secondary small" id="btnCheckUpdates" type="button">Buscar actualizaciones</button>
-                            <button class="btn primary small hidden" id="btnInstallUpdate" type="button">Reiniciar y actualizar</button>
-                        </div>
-                    </div>
-                </fieldset>
-                                <details class="advanced-settings"><summary>Escritura de credenciales (Inicio de sesión)</summary>
-                    <div class="form-grid compact">
-                        <div class="form-group"><label for="setInitialDelay">Espera inicial (ms)</label><input type="number" id="setInitialDelay" min="300" max="10000" step="100"></div>
-                        <div class="form-group"><label for="setCharDelay">Retardo carácter (ms)</label><input type="number" id="setCharDelay" min="1" max="100" step="1"></div>
-                        <div class="form-group"><label for="setFieldDelay">Retardo campos (ms)</label><input type="number" id="setFieldDelay" min="50" max="1000" step="50"></div>
-                    </div>
-                </details>
-                <details class="advanced-settings"><summary>Arranque del juego (Autoclick Play)</summary>
-                    <div class="form-grid compact">
-                        <div class="form-group"><label for="setAutoPlayPreDelayMs">Espera inicial TABs (ms)</label><input type="number" id="setAutoPlayPreDelayMs" min="100" max="5000" step="100" title="Tiempo de espera antes de empezar a pulsar TAB"></div>
-                        <div class="form-group"><label for="setAutoPlayTabs">Autoclick TABs</label><input type="number" id="setAutoPlayTabs" min="0" max="50" step="1" title="Número de TABs para el botón Play"></div>
-                        <div class="form-group"><label for="setAutoPlayTabDelayMs">Retardo TABs (ms)</label><input type="number" id="setAutoPlayTabDelayMs" min="0" max="500" step="10" title="Tiempo de espera entre pulsaciones de TAB"></div>
-                    </div>
-                </details>
-                <details class="advanced-settings"><summary>Sistema</summary>
-                    <div class="form-group full"><label for="setCustomRiotPath">Ruta personalizada de RiotClientServices.exe</label><input type="text" id="setCustomRiotPath" placeholder="Detección automática"><div class="test-row"><button class="btn secondary small" id="btnTestRiot" type="button">Comprobar cliente</button><span id="testRiotStatus"></span></div></div>
-                </details>
-                <footer class="modal-footer"><button class="btn secondary" id="btnCancelSettings" type="button">Cancelar</button><button class="btn primary" type="submit">Guardar ajustes</button></footer>
+                </div>
+
+                <footer class="modal-footer">
+                    <button class="btn secondary" id="btnCancelSettings" type="button">Cancelar</button>
+                    <button class="btn primary" type="submit">Guardar ajustes</button>
+                </footer>
             </form>
         </section>
     </div>

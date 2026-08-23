@@ -1219,6 +1219,18 @@ function setupCustomAvatarUploader() {
 }
 
 function bindEvents() {
+    // Settings Tabs
+    const tabBtns = document.querySelectorAll('.settings-tab-btn');
+    const tabPanels = document.querySelectorAll('.settings-panel');
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            tabBtns.forEach(b => b.classList.remove('active'));
+            tabPanels.forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(btn.dataset.tab).classList.add('active');
+        });
+    });
+
     $('btnMinimize').addEventListener('click', () => rendererApi?.minimizeWindow());
     $('btnClose').addEventListener('click', () => rendererApi?.closeWindow());
     $('btnAdd').addEventListener('click', () => openAccountModal());
@@ -1543,6 +1555,7 @@ async function initialize() {
 }
 
 initialize();
+
 
 
 
