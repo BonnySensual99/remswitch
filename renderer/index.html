@@ -29,13 +29,6 @@
         </nav>
 
         <div class="title-actions">
-            <div class="theme-picker" id="themePicker" aria-label="Tema visual">
-                <button class="theme-dot red active" data-theme="red" aria-label="Tema rojo" type="button"></button>
-                <button class="theme-dot cyan" data-theme="cyan" aria-label="Tema cian" type="button"></button>
-                <button class="theme-dot green" data-theme="green" aria-label="Tema verde" type="button"></button>
-                <button class="theme-dot purple" data-theme="purple" aria-label="Tema morado" type="button"></button>
-                <button class="theme-dot gold" data-theme="gold" aria-label="Tema dorado" type="button"></button>
-            </div>
             <button class="user-pill" id="userPill" type="button" aria-label="Editar perfil local">
                 <span class="user-avatar" id="headerAvatar">R</span>
                 <span id="headerUsername">Operador</span>
@@ -70,9 +63,9 @@
                     <p id="pageSubtitle">Cambia entre Valorant y League of Legends con 1 solo clic.</p>
                 </div>
                 <div class="hero-actions">
-                    <button class="btn secondary" id="btnSyncLiveRank" type="button">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
-                        Sincronizar rango
+                    <button class="btn secondary" id="btnManageAccounts" type="button">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18h16v-2H4v2ZM4 13h16v-2H4v2ZM4 8h16V6H4v2Z"/></svg>
+                        Gestionar cuentas
                     </button>
                     <button class="btn primary" id="btnAdd" type="button">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z"/></svg>
@@ -104,41 +97,8 @@
 
         </main>
 
-        <aside class="sidebar">
-            <section class="sidebar-card operator-card">
-                <div class="library-heading"><div><span class="eyebrow">BIBLIOTECA LOCAL</span><h2>Mis cuentas</h2></div><span class="online-pill">LOCAL</span></div>
-                <div class="stats-grid">
-                    <div><strong id="statAccounts">0</strong><span>Cuentas</span></div>
-                    <div><strong id="statValorant">0</strong><span>Valorant</span></div>
-                    <div><strong id="statLol">0</strong><span>LoL</span></div>
-                </div>
-            </section>
-
-            <section class="sidebar-card system-card" aria-labelledby="systemTitle">
-                <div class="card-heading"><h2 id="systemTitle">Estado del sistema</h2><span class="pulse-dot"></span></div>
-                <div class="system-line"><span>Cifrado local</span><strong id="encryptionState">Comprobando</strong></div>
-                <div class="system-line"><span>Riot Client</span><strong id="riotState">Comprobando</strong></div>
-                <div class="system-line"><span>Sesión en este equipo</span><strong id="riotSessionState">Comprobando</strong></div>
-                <div class="system-line"><span>Juego abierto</span><strong id="gameProcessState">Comprobando</strong></div>
-                <div class="system-line"><span>Operación</span><strong id="operationState">Disponible</strong></div>
-            </section>
-
-            <section class="sidebar-card activity-card" aria-labelledby="activityTitle">
-                <div class="card-heading"><h2 id="activityTitle">Registro local</h2><span class="badge-soft">SESIONES</span></div>
-                <div class="activity-list" id="activityList"></div>
-            </section>
-
-            <section class="disclaimer-card">
-                <strong>PROYECTO NO OFICIAL</strong>
-                <p>Uso privado con cuentas propias. Riot Games no patrocina ni respalda RemSwitcher.</p>
-            </section>
-        </aside>
     </div>
 
-    <div class="status-bar" id="statusBar">
-        <div class="status-left"><span class="status-indicator"></span><span id="statusText">Bóveda lista</span></div>
-        <div class="status-right"><span id="statusCode">LOCAL</span><span class="status-dot"></span><span id="queueState">Cola libre</span></div>
-    </div>
 
     <div class="modal-overlay" id="accountModal" aria-hidden="true">
         <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
@@ -250,6 +210,7 @@
                         <div class="form-group"><label for="setInitialDelay">Espera inicial (ms)</label><input type="number" id="setInitialDelay" min="300" max="10000" step="100"></div>
                         <div class="form-group"><label for="setCharDelay">Retardo carácter (ms)</label><input type="number" id="setCharDelay" min="1" max="100" step="1"></div>
                         <div class="form-group"><label for="setFieldDelay">Retardo campos (ms)</label><input type="number" id="setFieldDelay" min="50" max="1000" step="50"></div>
+                        <div class="form-group"><label for="setAutoPlayTabs">Autoclick TABs</label><input type="number" id="setAutoPlayTabs" min="0" max="50" step="1" title="Número de TABs para el botón Play"></div>
                     </div>
                     <div class="form-group full"><label for="setCustomRiotPath">Ruta personalizada de RiotClientServices.exe</label><input type="text" id="setCustomRiotPath" placeholder="Detección automática"><div class="test-row"><button class="btn secondary small" id="btnTestRiot" type="button">Comprobar cliente</button><span id="testRiotStatus"></span></div></div>
                 </details>
@@ -300,6 +261,46 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="app.js"></script>
+    
+<div class="hidden">
+<div id="accCustomAvatar"></div>
+<div id="accProfile"></div>
+<div id="activityList"></div>
+<div id="avatarPreviewFallback"></div>
+<div id="avatarPreviewImg"></div>
+<div id="btnCloseProfilesManager"></div>
+<div id="btnCloseProfilesModal"></div>
+<div id="btnCloseThemesModal"></div>
+<div id="btnCloseThemesModalBtn"></div>
+<div id="btnManageProfiles"></div>
+<div id="btnQuickCreateProfile"></div>
+<div id="btnRemoveCustomAvatar"></div>
+<div id="btnUploadAvatar"></div>
+<form id="createProfileForm"></form>
+<div id="editProfileId"></div>
+<div id="encryptionState"></div>
+<div id="gameProcessState"></div>
+<div id="inputCustomAvatar"></div>
+<div id="inputNewProfileName"></div>
+<div id="modalColorSwatches"></div>
+<div id="modalStyleCards"></div>
+<div id="operationState"></div>
+<div id="profileDropdown"></div>
+<div id="profileList"></div>
+<div id="profilesManagerList"></div>
+<div id="profilesModal"></div>
+<div id="riotSessionState"></div>
+<div id="riotState"></div>
+<div id="settingsColorSwatches"></div>
+<div id="settingsStyleCards"></div>
+<div id="themesModal"></div>
+<div id="themePicker"></div>
+<div id="btnCloseSwitch"></div>
+</div>
+<script src="app.js"></script>
 </body>
 </html>
+
+
+
+

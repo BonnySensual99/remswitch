@@ -21,6 +21,17 @@ contextBridge.exposeInMainWorld('api', Object.freeze({
     getUserProfile: () => ipcRenderer.invoke('get-user-profile'),
     saveUserProfile: (profile) => ipcRenderer.invoke('save-user-profile', profile),
 
+    getProfiles: () => ipcRenderer.invoke('get-profiles'),
+    saveProfile: (profile) => ipcRenderer.invoke('save-profile', profile),
+    deleteProfile: (id) => ipcRenderer.invoke('delete-profile', id),
+    setActiveProfile: (id) => ipcRenderer.invoke('set-active-profile', id),
+    onProfilesUpdated: (callback) => {
+        if (typeof callback !== 'function') return () => {};
+        const listener = (_event, payload) => callback(payload);
+        ipcRenderer.on('profiles-updated', listener);
+        return () => ipcRenderer.removeListener('profiles-updated', listener);
+    },
+
     getAppVersion: () => ipcRenderer.invoke('get-app-version'),
     checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
     installUpdate: () => ipcRenderer.invoke('install-update'),

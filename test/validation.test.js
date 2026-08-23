@@ -43,3 +43,22 @@ test('normaliza opciones de autocierre, sync de rango y atajo global', () => {
     assert.equal(settings.autoSyncRank, true);
     assert.equal(settings.globalShortcut, 'Ctrl+Shift+R');
 });
+
+test('normaliza profileId y avatar personalizado en cuentas', () => {
+    const account = normalizeAccountInput({
+        displayName: 'Smurf',
+        game: 'valorant',
+        username: 'smurf1',
+        profileId: 'smurfs',
+        customAvatar: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUg=='
+    });
+    assert.equal(account.profileId, 'smurfs');
+    assert.equal(account.customAvatar, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==');
+});
+
+test('valida y normaliza nombres de perfiles', () => {
+    const { normalizeProfileInput } = require('../lib/validation');
+    const prof = normalizeProfileInput({ name: '  Mi Perfil Secundario  ' });
+    assert.equal(prof.name, 'Mi Perfil Secundario');
+    assert.throws(() => normalizeProfileInput({ name: '' }), /obligatorio/);
+});

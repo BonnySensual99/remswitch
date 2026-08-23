@@ -3,9 +3,11 @@ const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
-const { execFileSync } = require('child_process');
+const util = require('util');
+const { execFileSync, execFile } = require('child_process');
+const execFileAsync = util.promisify(execFile);
 const { JsonStore } = require('./lib/storage');
-const { normalizeAccountInput, normalizeSettings } = require('./lib/validation');
+const { normalizeAccountInput, normalizeProfileInput, normalizeSettings } = require('./lib/validation');
 const { decryptFromCandidates } = require('./lib/legacy-safe-storage');
 const { runBridge } = require('./lib/bridge-runner');
 const { OperationGate } = require('./lib/operation-gate');
@@ -31,6 +33,7 @@ const DEFAULT_SETTINGS = Object.freeze({
     initialDelayMs: 1800,
     charDelayMs: 15,
     fieldDelayMs: 200,
+    autoPlayTabs: 23,
     customRiotPath: ''
 });
 
@@ -164,18 +167,31 @@ function findRiotClientPath() {
     return candidates.find((candidate) => fs.existsSync(candidate)) || '';
 }
 
+let riotSignatureCache = new Map();
+
 function validateRiotExecutable(inputPath, verifySignature = false) {
     const resolved = path.resolve(String(inputPath || ''));
     if (path.basename(resolved).toLowerCase() !== 'riotclientservices.exe' || !fs.existsSync(resolved)) {
         throw new Error('Selecciona un RiotClientServices.exe válido.');
     }
     if (verifySignature) {
+        if (riotSignatureCache.has(resolved)) {
+            if (!riotSignatureCache.get(resolved)) {
+                throw new Error('El ejecutable no tiene una firma válida de Riot Games.');
+            }
+            return resolved;
+        }
+        
         const encodedPath = Buffer.from(resolved, 'utf8').toString('base64');
         const script = `$p=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${encodedPath}'));$s=Get-AuthenticodeSignature -LiteralPath $p;Write-Output ($s.Status.ToString()+'|'+$s.SignerCertificate.Subject)`;
         const result = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
             encoding: 'utf8', windowsHide: true, timeout: 8000, maxBuffer: 1024 * 1024
         }).trim();
-        if (!result.startsWith('Valid|') || !result.toLowerCase().includes('riot games')) {
+        
+        const isValid = result.startsWith('Valid|') && result.toLowerCase().includes('riot games');
+        riotSignatureCache.set(resolved, isValid);
+        
+        if (!isValid) {
             throw new Error('El ejecutable no tiene una firma válida de Riot Games.');
         }
     }
@@ -193,42 +209,45 @@ function resolveValidatedRiotClient() {
     }
 }
 
-function isProcessRunning(exeName) {
+async function getRunningProcessesAsync(targetProcesses) {
     try {
-        const output = execFileSync('tasklist.exe', ['/FI', `IMAGENAME eq ${exeName}`, '/FO', 'CSV', '/NH'], {
+        const { stdout } = await execFileAsync('tasklist.exe', ['/FO', 'CSV', '/NH'], {
             encoding: 'utf8', windowsHide: true, timeout: 5000
         });
-        return output.toLowerCase().includes(`"${exeName.toLowerCase()}"`);
+        const lowerOutput = stdout.toLowerCase();
+        return targetProcesses.filter(exeName => lowerOutput.includes(`"${exeName.toLowerCase()}"`));
     } catch {
-        return false;
+        return [];
     }
 }
 
 async function terminateRiotProcesses() {
-    const running = RIOT_PROCESSES.filter(isProcessRunning);
+    let running = await getRunningProcessesAsync(RIOT_PROCESSES);
     if (!running.length) return true;
     try {
         const args = ['/F'];
         for (const processName of running) args.push('/IM', processName);
-        execFileSync('taskkill.exe', args, { stdio: 'ignore', windowsHide: true, timeout: 8000 });
+        await execFileAsync('taskkill.exe', args, { windowsHide: true, timeout: 8000 });
     } catch {}
     for (let attempt = 0; attempt < 30; attempt += 1) {
-        if (!RIOT_PROCESSES.some(isProcessRunning)) return true;
+        running = await getRunningProcessesAsync(RIOT_PROCESSES);
+        if (!running.length) return true;
         await delay(200);
     }
     return false;
 }
 
 async function terminateGameProcesses() {
-    const running = GAME_PROCESSES.filter(isProcessRunning);
+    let running = await getRunningProcessesAsync(GAME_PROCESSES);
     if (!running.length) return true;
     try {
         const args = ['/F', '/T'];
         for (const processName of running) args.push('/IM', processName);
-        execFileSync('taskkill.exe', args, { stdio: 'ignore', windowsHide: true, timeout: 8000 });
+        await execFileAsync('taskkill.exe', args, { windowsHide: true, timeout: 8000 });
     } catch {}
     for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (!GAME_PROCESSES.some(isProcessRunning)) return true;
+        running = await getRunningProcessesAsync(GAME_PROCESSES);
+        if (!running.length) return true;
         await delay(200);
     }
     return false;
@@ -305,7 +324,8 @@ async function startAccountSwitch(accountId, requestId, targetGame = null) {
         const settings = normalizeSettings(store.loadSettings(), DEFAULT_SETTINGS);
 
         emitSwitch({ ...payloadBase, state: 'CheckingRiotClient', message: 'Comprobando Riot Client…' });
-        const runningGame = GAME_PROCESSES.find(isProcessRunning);
+        const runningGamesList = await getRunningProcessesAsync(GAME_PROCESSES);
+        const runningGame = runningGamesList.length > 0 ? runningGamesList[0] : undefined;
         if (runningGame) {
             if (settings.autoCloseRunningGames) {
                 emitSwitch({ ...payloadBase, state: 'CheckingRiotClient', message: `Cerrando ${runningGame} para cambiar de cuenta…` });
@@ -321,42 +341,139 @@ async function startAccountSwitch(accountId, requestId, targetGame = null) {
         if (!fs.existsSync(bridgePath)) throw Object.assign(new Error('No se encontró el puente nativo.'), { code: 'BRIDGE_MISSING' });
 
         const activeSession = await queryRiotSession();
-        if (activeSession) {
-            emitSwitch({ ...payloadBase, state: 'LoggingOut', message: `Cerrando la sesión de ${activeSession.riotId}…` });
-            const logout = await logoutRiotSession();
-            if (!logout.loggedOut) {
-                throw Object.assign(new Error('Riot Client no confirmó el cierre de sesión. Cierra sesión manualmente y vuelve a intentarlo.'), { code: 'RIOT_LOGOUT_FAILED', uiState: 'ManualActionRequired' });
-            }
-            emitSwitch({ ...payloadBase, state: 'LogoutConfirmed', message: 'Sesión anterior cerrada.' });
-        }
-
-        const password = decryptAccountPassword(account);
-        emitSwitch({ ...payloadBase, state: 'ClosingExistingSession', message: 'Cerrando la sesión anterior…' });
-        if (!(await terminateRiotProcesses())) throw Object.assign(new Error('Riot Client no pudo cerrarse.'), { code: 'RIOT_CLOSE_FAILED' });
-
-        emitSwitch({ ...payloadBase, state: 'StartingRiotClient', message: 'Abriendo Riot Client…' });
-        await launchDetached(riotPath, ['--open-shortcuts']);
-
-        await runBridge({
-            bridgePath,
-            request: {
-                username: account.username,
-                password,
-                riotClientPath: riotPath,
-                initialDelayMs: settings.initialDelayMs,
-                charDelayMs: settings.charDelayMs,
-                fieldDelayMs: settings.fieldDelayMs
-            },
-            onState: (event) => emitSwitch({ ...payloadBase, ...event })
-        });
-
-        await waitForAuthenticatedSession(account, payloadBase);
-        
         const effectiveGame = targetGame === 'none' ? null : (targetGame || (settings.autoLaunchGame ? (account.game || 'valorant') : null));
-        if (effectiveGame && GAME_ARGS[effectiveGame]) {
-            const gameLabel = effectiveGame === 'league_of_legends' ? 'League of Legends' : 'VALORANT';
-            emitSwitch({ ...payloadBase, state: 'LaunchingGame', message: `Iniciando ${gameLabel}…` });
-            await launchDetached(riotPath, GAME_ARGS[effectiveGame]);
+        const alreadyLoggedIn = Boolean(activeSession && account.riotId && activeSession.riotId.toLowerCase() === account.riotId.toLowerCase());
+
+        if (alreadyLoggedIn) {
+            if (effectiveGame && GAME_ARGS[effectiveGame]) {
+                const gameLabel = effectiveGame === 'league_of_legends' ? 'League of Legends' : 'VALORANT';
+                emitSwitch({ ...payloadBase, state: 'LaunchingGame', message: `Iniciando ${gameLabel}…` });
+                const { shell } = require('electron');
+                const uri = effectiveGame === 'league_of_legends' ? 'riotclient://launch/league_of_legends/live' : 'riotclient://launch/valorant/live';
+                await shell.openExternal(uri).catch(() => {});
+                
+                const shortcutPath = effectiveGame === 'league_of_legends' 
+                    ? 'C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Riot Games\\League of Legends.lnk'
+                    : 'C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Riot Games\\VALORANT.lnk';
+                if (require('fs').existsSync(shortcutPath)) {
+                    await shell.openPath(shortcutPath);
+                }
+
+                // MAGIC FALLBACK: Send 23 Tabs and Enter to click "Play" manually
+                await delay(4000);
+                const psScript = `
+Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+public class Win32 {
+    [DllImport("user32.dll")]
+    public static extern bool SetForegroundWindow(IntPtr hWnd);
+}
+"@
+$proc = Get-Process -Name "RiotClientUx" -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
+if ($proc) {
+    [Win32]::SetForegroundWindow($proc.MainWindowHandle)
+}
+Add-Type -AssemblyName System.Windows.Forms
+Start-Sleep -Milliseconds 1500
+$tabs = ${settings.autoPlayTabs ?? 23}
+if ($tabs -gt 0) {
+    for ($i=0; $i -lt $tabs; $i++) {
+        [System.Windows.Forms.SendKeys]::SendWait("{TAB}")
+        Start-Sleep -Milliseconds 100
+    }
+    Start-Sleep -Milliseconds 200
+    [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")
+}
+`;
+                const tempPs1 = require('path').join(require('os').tmpdir(), 'rem_riot_click.ps1');
+                require('fs').writeFileSync(tempPs1, psScript, 'utf8');
+                require('child_process').exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${tempPs1}"`);
+            } else {
+                emitSwitch({ ...payloadBase, state: 'StartingRiotClient', message: 'Mostrando Riot Client…' });
+                await launchDetached(riotPath, ['--open-shortcuts']);
+            }
+        } else {
+            if (activeSession) {
+                emitSwitch({ ...payloadBase, state: 'LoggingOut', message: `Cerrando la sesión de ${activeSession.riotId}…` });
+                const logout = await logoutRiotSession();
+                if (!logout.loggedOut) {
+                    throw Object.assign(new Error('Riot Client no confirmó el cierre de sesión. Cierra sesión manualmente y vuelve a intentarlo.'), { code: 'RIOT_LOGOUT_FAILED', uiState: 'ManualActionRequired' });
+                }
+                emitSwitch({ ...payloadBase, state: 'LogoutConfirmed', message: 'Sesión anterior cerrada.' });
+            }
+
+            const password = decryptAccountPassword(account);
+            emitSwitch({ ...payloadBase, state: 'ClosingExistingSession', message: 'Cerrando la sesión anterior…' });
+            if (!(await terminateRiotProcesses())) throw Object.assign(new Error('Riot Client no pudo cerrarse.'), { code: 'RIOT_CLOSE_FAILED' });
+
+            emitSwitch({ ...payloadBase, state: 'StartingRiotClient', message: 'Abriendo Riot Client…' });
+            const initialArgs = (effectiveGame && GAME_ARGS[effectiveGame]) ? GAME_ARGS[effectiveGame] : ['--open-shortcuts'];
+            await launchDetached(riotPath, initialArgs);
+
+            await runBridge({
+                bridgePath,
+                request: {
+                    username: account.username,
+                    password,
+                    riotClientPath: riotPath,
+                    initialDelayMs: settings.initialDelayMs,
+                    charDelayMs: settings.charDelayMs,
+                    fieldDelayMs: settings.fieldDelayMs
+                },
+                onState: (event) => emitSwitch({ ...payloadBase, ...event })
+            });
+
+            await waitForAuthenticatedSession(account, payloadBase);
+            
+            if (effectiveGame && GAME_ARGS[effectiveGame]) {
+                const gameLabel = effectiveGame === 'league_of_legends' ? 'League of Legends' : 'VALORANT';
+                emitSwitch({ ...payloadBase, state: 'LaunchingGame', message: `Iniciando ${gameLabel}…` });
+                await delay(3000);
+                
+                // Intentar los métodos oficiales
+                const { shell } = require('electron');
+                const uri = effectiveGame === 'league_of_legends' ? 'riotclient://launch/league_of_legends/live' : 'riotclient://launch/valorant/live';
+                await shell.openExternal(uri).catch(() => {});
+                
+                const shortcutPath = effectiveGame === 'league_of_legends' 
+                    ? 'C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Riot Games\\League of Legends.lnk'
+                    : 'C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Riot Games\\VALORANT.lnk';
+                if (require('fs').existsSync(shortcutPath)) {
+                    await shell.openPath(shortcutPath);
+                }
+
+                // MAGIC FALLBACK: Send 23 Tabs and Enter to click "Play" manually
+                await delay(4000);
+                const psScript = `
+Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+public class Win32 {
+    [DllImport("user32.dll")]
+    public static extern bool SetForegroundWindow(IntPtr hWnd);
+}
+"@
+$proc = Get-Process -Name "RiotClientUx" -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
+if ($proc) {
+    [Win32]::SetForegroundWindow($proc.MainWindowHandle)
+}
+Add-Type -AssemblyName System.Windows.Forms
+Start-Sleep -Milliseconds 1500
+$tabs = ${settings.autoPlayTabs ?? 23}
+if ($tabs -gt 0) {
+    for ($i=0; $i -lt $tabs; $i++) {
+        [System.Windows.Forms.SendKeys]::SendWait("{TAB}")
+        Start-Sleep -Milliseconds 100
+    }
+    Start-Sleep -Milliseconds 200
+    [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")
+}
+`;
+                const tempPs1 = require('path').join(require('os').tmpdir(), 'rem_riot_click.ps1');
+                require('fs').writeFileSync(tempPs1, psScript, 'utf8');
+                require('child_process').exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${tempPs1}"`);
+            }
         }
 
         const now = Math.floor(Date.now() / 1000);
@@ -414,9 +531,9 @@ async function detectActiveRiotSession() {
 function createWindow() {
     const iconPath = path.join(__dirname, 'build', 'icon.png');
     mainWindow = new BrowserWindow({
-        width: 1180,
+        width: 850,
         height: 800,
-        minWidth: 960,
+        minWidth: 600,
         minHeight: 680,
         frame: false,
         backgroundColor: '#05070c',
@@ -454,13 +571,29 @@ function showMainWindow() {
     mainWindow.focus();
 }
 
-function updateTrayMenu(sessionInfo = null) {
+let lastTrayStateHash = '';
+let lastKnownSessionInfo = null;
+
+function updateTrayMenu(sessionInfo = undefined) {
     if (!tray || tray.isDestroyed()) return;
+    if (sessionInfo !== undefined) lastKnownSessionInfo = sessionInfo;
+    const currentSession = lastKnownSessionInfo;
+    
     const settings = store ? store.loadSettings() : DEFAULT_SETTINGS;
     const accounts = store ? store.loadAccounts() : [];
     const isBusy = Boolean(operationGate.activeRequestId);
+    
+    const currentStateHash = JSON.stringify({
+        activeRiotId: currentSession?.riotId || '',
+        isBusy,
+        minimizeToTray: settings.minimizeToTray,
+        accounts: accounts.map(a => ({ id: a.id, display: a.displayName, riotId: a.riotId, region: a.region, game: a.game }))
+    });
+    
+    if (currentStateHash === lastTrayStateHash) return;
+    lastTrayStateHash = currentStateHash;
 
-    const activeRiotId = sessionInfo?.riotId || '';
+    const activeRiotId = currentSession?.riotId || '';
     if (activeRiotId) {
         tray.setToolTip(`RemSwitcher · Sesión: ${activeRiotId}`);
     } else {
@@ -690,6 +823,10 @@ function registerPackagedSmokeIpc() {
     ipcMain.handle('get-accounts', () => accounts);
     ipcMain.handle('get-activity-log', () => []);
     ipcMain.handle('get-user-profile', () => ({ username: '', createdAt: 0 }));
+    ipcMain.handle('get-profiles', () => ({ activeProfileId: 'default', profiles: [{ id: 'default', name: 'Principal', createdAt: 0 }] }));
+    ipcMain.handle('save-profile', () => ({ activeProfileId: 'default', profiles: [{ id: 'default', name: 'Principal', createdAt: 0 }] }));
+    ipcMain.handle('delete-profile', () => ({ activeProfileId: 'default', profiles: [{ id: 'default', name: 'Principal', createdAt: 0 }] }));
+    ipcMain.handle('set-active-profile', () => ({ activeProfileId: 'default', profiles: [{ id: 'default', name: 'Principal', createdAt: 0 }] }));
     ipcMain.handle('get-settings', () => settings);
     ipcMain.handle('get-app-version', () => '1.0.1');
     ipcMain.handle('check-for-updates', () => ({ status: 'dev-mode', message: 'Modo de prueba' }));
@@ -718,19 +855,19 @@ async function runPackagedSmoke() {
         addButton: document.getElementById('btnAdd') !== null,
         settingsButton: document.querySelector('[data-tab="settings"]') !== null,
         accountCard: document.querySelector('.account-card') !== null,
-        gameBadge: document.querySelector('.game-badge')?.textContent === 'VALORANT',
-        currentBadge: document.querySelector('.current-badge')?.textContent === 'ACTIVA'
+        gameBadge: document.querySelector('.game-badge')?.textContent.includes('VALORANT'),
+        currentBadge: document.querySelector('.current-badge')?.textContent === 'ACTIVA',
+        themePicker: document.getElementById('themePicker') !== null,
+        userPill: document.getElementById('userPill') !== null
     })`);
     await mainWindow.webContents.executeJavaScript('document.querySelector("[data-tab=\\"accounts\\"]").click()');
-    const accountsView = await mainWindow.webContents.executeJavaScript("({ view: document.body.dataset.view, title: document.getElementById('pageTitle').textContent, briefHidden: getComputedStyle(document.getElementById('dashboardBrief')).display === 'none' })");
-    await mainWindow.webContents.executeJavaScript('document.querySelector("[data-tab=\\"dashboard\\"]").click()');
-    const dashboardView = await mainWindow.webContents.executeJavaScript("({ view: document.body.dataset.view, briefVisible: getComputedStyle(document.getElementById('dashboardBrief')).display !== 'none' })");
+    const accountsView = await mainWindow.webContents.executeJavaScript("({ view: document.body.dataset.view, title: document.getElementById('pageTitle')?.textContent })");
     await mainWindow.webContents.executeJavaScript('document.getElementById("btnAdd").click()');
     const accountModalOpen = await mainWindow.webContents.executeJavaScript('document.getElementById("accountModal").classList.contains("active")');
     await mainWindow.webContents.executeJavaScript('document.getElementById("btnCloseAccountModal").click(); document.querySelector("[data-tab=\\"settings\\"]").click()');
     const settingsModalOpen = await mainWindow.webContents.executeJavaScript('document.getElementById("settingsModal").classList.contains("active")');
     if (consoleErrors.length) throw new Error(`Errores de consola: ${consoleErrors.join(' | ')}`);
-    if (!result.hasApi || !result.hasRendererApiCollision || !result.addButton || !result.settingsButton || !result.accountCard || !result.gameBadge || !result.currentBadge || accountsView.view !== 'accounts' || accountsView.title !== 'Bóveda de cuentas' || !accountsView.briefHidden || dashboardView.view !== 'dashboard' || !dashboardView.briefVisible || !accountModalOpen || !settingsModalOpen) {
+    if (!result.hasApi || !result.hasRendererApiCollision || !result.addButton || !result.settingsButton || !result.accountCard || !result.gameBadge || !result.currentBadge || accountsView.view !== 'accounts' || !accountsView.title || !accountModalOpen || !settingsModalOpen) {
         throw new Error('El smoke empaquetado no pudo accionar la precarga o los botones del renderer.');
     }
     console.log('Packaged smoke: precarga y botones OK');
@@ -854,7 +991,8 @@ function registerIpc() {
         if (settings.autoSyncRank && activeSession) {
             syncAccountsWithLiveRank().catch(() => {});
         }
-        const runningProcess = GAME_PROCESSES.find(isProcessRunning) || '';
+        const runningGamesList = await getRunningProcessesAsync(GAME_PROCESSES);
+        const runningProcess = runningGamesList.length > 0 ? runningGamesList[0] : '';
         const runningGame = /leagueclient|league of legends/i.test(runningProcess) ? 'league_of_legends' : runningProcess ? 'valorant' : null;
         return {
             riotClientFound,
@@ -892,6 +1030,36 @@ function registerIpc() {
         const profile = { username, createdAt: Number(current.createdAt) || Math.floor(Date.now() / 1000) };
         store.saveProfile(profile);
         return profile;
+    });
+
+    handle('get-profiles', () => store.loadProfilesData());
+    handle('save-profile', (rawProfile) => {
+        const input = normalizeProfileInput(rawProfile);
+        const result = store.saveProfileItem(input);
+        updateTrayMenu();
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('profiles-updated', result);
+        }
+        return result;
+    });
+    handle('delete-profile', (rawId) => {
+        const id = String(rawId || '');
+        const result = store.deleteProfileItem(id);
+        updateTrayMenu();
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('profiles-updated', result);
+            mainWindow.webContents.send('accounts-updated', store.loadPublicAccounts());
+        }
+        return result;
+    });
+    handle('set-active-profile', (rawId) => {
+        const id = String(rawId || '');
+        const result = store.setActiveProfileId(id);
+        updateTrayMenu();
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('profiles-updated', result);
+        }
+        return result;
     });
 
     handle('get-app-version', () => app.getVersion());

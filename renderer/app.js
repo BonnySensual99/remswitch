@@ -3,8 +3,8 @@ const $ = (id) => document.getElementById(id);
 
 const elements = {
     accountsList: $('accountsList'), searchInput: $('searchInput'), gameTabs: $('gameTabs'), navTabs: $('navTabs'),
-    accountModal: $('accountModal'), settingsModal: $('settingsModal'), profileModal: $('profileModal'), confirmModal: $('confirmModal'),
-    switchOverlay: $('switchOverlay'), statusBar: $('statusBar'), statusText: $('statusText'), statusCode: $('statusCode'), toast: $('toast')
+    accountModal: $('accountModal'), settingsModal: $('settingsModal'), themesModal: $('themesModal'), profileModal: $('profileModal'), profilesModal: $('profilesModal'), confirmModal: $('confirmModal'),
+    switchOverlay: $('switchOverlay'), toast: $('toast')
 };
 
 const GAME_LABELS = { valorant: 'VALORANT', league_of_legends: 'LEAGUE OF LEGENDS' };
@@ -34,7 +34,8 @@ const TERMINAL_SWITCH_STATES = new Set(['Error', 'ManualActionRequired', 'WrongP
 
 let accounts = [];
 let activity = [];
-let profile = { username: '', createdAt: 0 };
+let profiles = [{ id: 'default', name: 'Principal', createdAt: 0 }];
+let activeProfileId = 'default';
 let settings = null;
 let runtimeStatus = null;
 let currentFilter = 'all';
@@ -80,23 +81,64 @@ function showToast(message, type = 'info') {
     toastTimer = setTimeout(() => elements.toast.classList.remove('show'), 3200);
 }
 
-function addClickRipple(event) {
-    const button = event.target.closest('button');
-    if (!button || button.disabled || button.classList.contains('modal-close')) return;
-    const ripple = document.createElement('span');
-    ripple.className = 'ripple';
-    const bounds = button.getBoundingClientRect();
-    ripple.style.left = `${event.clientX - bounds.left}px`;
-    ripple.style.top = `${event.clientY - bounds.top}px`;
-    button.append(ripple);
-    ripple.addEventListener('animationend', () => ripple.remove(), { once: true });
+const STYLES_META = {
+    oled: { name: 'Minimal OLED', icon: '⬛' },
+    scifi: { name: 'Sci-Fi Hologram', icon: '🚀' }
+};
+
+const THEME_RGBS = {
+    red: '255, 70, 85',
+    cyan: '0, 240, 255',
+    green: '32, 227, 154',
+    purple: '185, 131, 255',
+    gold: '255, 189, 61',
+    pink: '255, 42, 133',
+    white: '241, 245, 249'
+};
+
+let currentStyle = 'oled';
+let currentColor = 'red';
+let currentThemeRgb = THEME_RGBS.red;
+
+function applyStyle(style, save = true) {
+    const safeStyle = STYLES_META[style] ? style : 'oled';
+    currentStyle = safeStyle;
+    document.body.dataset.style = safeStyle;
+    if (save) localStorage.setItem('style', safeStyle);
+
+    const meta = STYLES_META[safeStyle];
+
+
+    document.querySelectorAll('.style-card').forEach((btn) => btn.classList.toggle('active', btn.dataset.style === safeStyle));
+
+    initCanvas();
+}
+
+function applyColor(color, save = true) {
+    const safeColor = THEME_RGBS[color] ? color : 'red';
+    currentColor = safeColor;
+    document.body.dataset.color = safeColor;
+    document.body.dataset.theme = safeColor;
+    currentThemeRgb = THEME_RGBS[safeColor] || THEME_RGBS.red;
+    if (save) {
+        localStorage.setItem('color', safeColor);
+        localStorage.setItem('theme', safeColor);
+    }
+
+
+
+    document.querySelectorAll('.theme-dot').forEach((btn) => {
+        const dotColor = btn.dataset.color || btn.dataset.theme;
+        btn.classList.toggle('active', dotColor === safeColor);
+    });
+    document.querySelectorAll('.color-swatch').forEach((btn) => {
+        const swatchColor = btn.dataset.color || btn.dataset.theme;
+        btn.classList.toggle('active', swatchColor === safeColor);
+    });
 }
 
 function applyTheme(theme) {
-    const safeTheme = ['red', 'cyan', 'green', 'purple', 'gold'].includes(theme) ? theme : 'red';
-    document.body.dataset.theme = safeTheme;
-    localStorage.setItem('theme', safeTheme);
-    document.querySelectorAll('.theme-dot').forEach((button) => button.classList.toggle('active', button.dataset.theme === safeTheme));
+    applyColor(theme);
 }
 
 function applyMotionPreference() {
@@ -110,87 +152,118 @@ function applyMotionPreference() {
     }
 }
 
+let pendingMousePos = { x: -1000, y: -1000 };
 let mousePos = { x: -1000, y: -1000 };
+let isWindowActive = true;
+let lastCanvasFrameTime = 0;
+const CANVAS_FRAME_INTERVAL_MS = 28; // Cap canvas to ~35 FPS for zero CPU/GPU overhead
 
 function initCanvas() {
     const canvas = $('bgCanvas');
     if (!canvas) return;
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    const count = Math.min(110, Math.max(56, Math.floor((canvas.width * canvas.height) / 12500)));
+    canvas.width = Math.floor(window.innerWidth);
+    canvas.height = Math.floor(window.innerHeight);
+
+    const count = currentStyle === 'oled' ? 12 : 22;
+
     particles = Array.from({ length: count }, () => ({
-        x: Math.random() * canvas.width, y: Math.random() * canvas.height,
-        vx: (Math.random() - .5) * .14, vy: (Math.random() - .5) * .14,
-        size: Math.random() * 2.2 + 1.2, alpha: Math.random() * .22 + .14,
-        phase: Math.random() * Math.PI * 2, anchor: Math.random() < .16
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - .5) * (currentStyle === 'oled' ? .12 : .22),
+        vy: (Math.random() - .5) * (currentStyle === 'oled' ? .12 : .22),
+        size: currentStyle === 'oled' ? Math.random() * 1.0 + 0.6 : Math.random() * 1.6 + 1.0,
+        alpha: currentStyle === 'oled' ? Math.random() * .10 + .05 : Math.random() * .22 + .10,
+        phase: Math.random() * Math.PI * 2,
+        anchor: currentStyle !== 'oled' && Math.random() < .15
     }));
 }
 
-function animateCanvas() {
+function animateCanvas(timestamp = 0) {
     if (settings?.reducedMotion || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!isWindowActive || document.hidden) {
+        animationFrame = requestAnimationFrame(animateCanvas);
+        return;
+    }
+
+    if (timestamp - lastCanvasFrameTime < CANVAS_FRAME_INTERVAL_MS) {
+        animationFrame = requestAnimationFrame(animateCanvas);
+        return;
+    }
+    lastCanvasFrameTime = timestamp;
+
     const canvas = $('bgCanvas');
-    const context = canvas?.getContext('2d');
+    const context = canvas?.getContext('2d', { alpha: true });
     if (!canvas || !context) return;
     context.clearRect(0, 0, canvas.width, canvas.height);
-    const color = getComputedStyle(document.body).getPropertyValue('--accent-rgb').trim();
-    for (let index = 0; index < particles.length; index += 1) {
-        for (let otherIndex = index + 1; otherIndex < particles.length; otherIndex += 1) {
+
+    mousePos.x = pendingMousePos.x;
+    mousePos.y = pendingMousePos.y;
+
+    const color = currentThemeRgb;
+    const pLen = particles.length;
+
+    // Draw connection mesh only for scifi style
+    if (currentStyle === 'scifi') {
+        const maxDistSq = 120 * 120;
+        context.lineWidth = 0.6;
+        for (let index = 0; index < pLen; index += 1) {
             const first = particles[index];
-            const second = particles[otherIndex];
-            const dx = first.x - second.x;
-            const dy = first.y - second.y;
-            const distance = Math.hypot(dx, dy);
-            if (distance > 172) continue;
-            const strength = (1 - distance / 172) * (.72 + Math.sin((first.phase + second.phase) * .5) * .28);
-            context.strokeStyle = `rgba(${color}, ${strength * .18})`;
-            context.lineWidth = .55 + strength * .8;
-            context.beginPath();
-            context.moveTo(first.x, first.y);
-            context.lineTo(second.x, second.y);
-            context.stroke();
+            for (let otherIndex = index + 1; otherIndex < pLen; otherIndex += 1) {
+                const second = particles[otherIndex];
+                const dx = first.x - second.x;
+                const dy = first.y - second.y;
+                const distSq = dx * dx + dy * dy;
+                if (distSq > maxDistSq) continue;
+                const strength = 1 - Math.sqrt(distSq) / 120;
+                context.strokeStyle = `rgba(${color}, ${strength * 0.14})`;
+                context.beginPath();
+                context.moveTo(first.x, first.y);
+                context.lineTo(second.x, second.y);
+                context.stroke();
+            }
         }
     }
-    for (const particle of particles) {
+
+    // Draw particles
+    for (let i = 0; i < pLen; i += 1) {
+        const particle = particles[i];
         particle.x += particle.vx;
         particle.y += particle.vy;
         particle.phase += .012;
         if (particle.x < 0) particle.x = canvas.width;
-        if (particle.x > canvas.width) particle.x = 0;
+        else if (particle.x > canvas.width) particle.x = 0;
         if (particle.y < 0) particle.y = canvas.height;
-        if (particle.y > canvas.height) particle.y = 0;
-        
-        if (mousePos.x > 0) {
+        else if (particle.y > canvas.height) particle.y = 0;
+
+        if (mousePos.x > 0 && currentStyle === 'scifi') {
             const mdx = particle.x - mousePos.x;
             const mdy = particle.y - mousePos.y;
-            const mdist = Math.hypot(mdx, mdy);
-            if (mdist < 140) {
-                const mforce = (1 - mdist / 140) * 0.35;
-                context.strokeStyle = `rgba(${color}, ${mforce * 0.45})`;
-                context.lineWidth = 0.8;
+            const mdistSq = mdx * mdx + mdy * mdy;
+            if (mdistSq < 10000) {
+                const mdist = Math.sqrt(mdistSq);
+                const mforce = (1 - mdist / 100) * 0.25;
+                context.strokeStyle = `rgba(${color}, ${mforce * 0.3})`;
                 context.beginPath();
                 context.moveTo(particle.x, particle.y);
                 context.lineTo(mousePos.x, mousePos.y);
                 context.stroke();
             }
         }
-        
-        const alpha = particle.alpha * (.78 + Math.sin(particle.phase) * .22);
-        context.shadowColor = `rgba(${color}, ${alpha})`;
-        context.shadowBlur = 8 + particle.size * 2;
+
+        const alpha = particle.alpha * (0.85 + Math.sin(particle.phase) * 0.15);
         context.fillStyle = `rgba(${color}, ${alpha})`;
         context.beginPath();
         context.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
         context.fill();
-        if (particle.anchor) {
-            context.shadowBlur = 0;
-            context.strokeStyle = `rgba(${color}, ${alpha * .55})`;
-            context.lineWidth = .7;
+
+        if (particle.anchor && currentStyle === 'scifi') {
+            context.strokeStyle = `rgba(${color}, ${alpha * 0.4})`;
             context.beginPath();
-            context.arc(particle.x, particle.y, particle.size * (2.6 + Math.sin(particle.phase) * .25), 0, Math.PI * 2);
+            context.arc(particle.x, particle.y, particle.size * 2.2, 0, Math.PI * 2);
             context.stroke();
         }
     }
-    context.shadowBlur = 0;
+
     animationFrame = requestAnimationFrame(animateCanvas);
 }
 
@@ -270,15 +343,165 @@ function updateGameFields(game, selectedRank, selectedAvatar) {
     updateSelectOptions($('accAvatar'), AVATARS[game] || AVATARS.valorant, selectedAvatar);
 }
 
-function renderProfile() {
-    const name = profile.username?.trim() || 'Operador';
+function renderProfiles() {
+    const active = profiles.find((p) => p.id === activeProfileId) || profiles[0] || { id: 'default', name: 'Principal' };
+    activeProfileId = active.id;
+    const name = active.name?.trim() || 'Principal';
     const initial = name.charAt(0).toUpperCase();
     $('headerUsername').textContent = name;
     $('headerAvatar').textContent = initial;
+
+    const list = $('profileList');
+    if (list) {
+        list.textContent = '';
+        for (const p of profiles) {
+            const count = accounts.filter((a) => (a.profileId || 'default') === p.id).length;
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = `profile-item${p.id === activeProfileId ? ' active' : ''}`;
+            item.innerHTML = `
+                <span class="profile-item-name">${escapeHtml(p.name)}</span>
+                <span class="profile-item-badge">${count} ${count === 1 ? 'cuenta' : 'cuentas'}</span>
+            `;
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                selectProfile(p.id);
+            });
+            list.append(item);
+        }
+    }
+}
+
+function renderProfilesManager() {
+    const list = $('profilesManagerList');
+    if (!list) return;
+    list.textContent = '';
+    for (const p of profiles) {
+        const count = accounts.filter((a) => (a.profileId || 'default') === p.id).length;
+        const isActive = p.id === activeProfileId;
+        const item = document.createElement('div');
+        item.className = `profiles-manager-item${isActive ? ' is-active' : ''}`;
+        item.innerHTML = `
+            <div class="profiles-manager-info">
+                <strong>${escapeHtml(p.name)}</strong>
+                <small>${count} ${count === 1 ? 'cuenta' : 'cuentas'}${isActive ? ' · Activo' : ''}</small>
+            </div>
+            <div class="profiles-manager-actions">
+                ${!isActive ? `<button type="button" class="btn secondary small btn-set-active" title="Activar perfil">Activar</button>` : ''}
+                <button type="button" class="card-action edit btn-edit-prof" title="Renombrar perfil" aria-label="Renombrar">${iconSvg('edit')}</button>
+                ${profiles.length > 1 ? `<button type="button" class="card-action delete btn-del-prof" title="Eliminar perfil" aria-label="Eliminar">${iconSvg('trash')}</button>` : ''}
+            </div>
+        `;
+        item.querySelector('.btn-set-active')?.addEventListener('click', () => {
+            selectProfile(p.id);
+            renderProfilesManager();
+        });
+        item.querySelector('.btn-edit-prof')?.addEventListener('click', () => openEditProfile(p));
+        item.querySelector('.btn-del-prof')?.addEventListener('click', () => deleteProfile(p.id));
+        list.append(item);
+    }
+}
+
+async function selectProfile(profileId) {
+    activeProfileId = profileId;
+    $('profileDropdown')?.classList.add('hidden');
+    $('userPill')?.classList.remove('active');
+    if (rendererApi) {
+        try {
+            const res = await rendererApi.setActiveProfile(profileId);
+            profiles = res.profiles || profiles;
+            activeProfileId = res.activeProfileId || profileId;
+        } catch {}
+    }
+    renderProfiles();
+    renderAccounts();
+}
+
+function openEditProfile(profileItem) {
+    $('editProfileId').value = profileItem.id;
+    $('inputProfileUsername').value = profileItem.name || '';
+    $('profileTitle').textContent = `Renombrar perfil “${profileItem.name}”`;
+    showModal(elements.profileModal);
+}
+
+async function saveProfile(event) {
+    event.preventDefault();
+    if (!rendererApi) return;
+    const id = $('editProfileId')?.value;
+    const name = $('inputProfileUsername')?.value?.trim();
+    if (!name) return;
+    try {
+        const res = await rendererApi.saveProfile({ id: id || undefined, name });
+        profiles = res.profiles || profiles;
+        activeProfileId = res.activeProfileId || activeProfileId;
+        hideModal(elements.profileModal);
+        renderProfiles();
+        renderAccounts();
+        renderProfilesManager();
+        showToast('Perfil guardado.', 'success');
+        playSound('success');
+    } catch (err) {
+        showToast(err.message || 'Error al guardar perfil.', 'error');
+    }
+}
+
+function openProfilesManager() {
+    $('profileDropdown')?.classList.add('hidden');
+    $('userPill')?.classList.remove('active');
+    renderProfilesManager();
+    showModal(elements.profilesModal);
+}
+
+function openQuickCreateProfile() {
+    $('profileDropdown')?.classList.add('hidden');
+    $('userPill')?.classList.remove('active');
+    openProfilesManager();
+    $('inputNewProfileName')?.focus();
+}
+
+async function createProfileFromBar(event) {
+    event.preventDefault();
+    if (!rendererApi) return;
+    const input = $('inputNewProfileName');
+    const name = input.value.trim();
+    if (!name) return;
+    try {
+        const res = await rendererApi.saveProfile({ name });
+        profiles = res.profiles || profiles;
+        activeProfileId = res.activeProfileId || activeProfileId;
+        input.value = '';
+        renderProfiles();
+        renderAccounts();
+        renderProfilesManager();
+        showToast(`Perfil “${name}” creado y activado.`, 'success');
+        playSound('success');
+    } catch (err) {
+        showToast(err.message || 'Error al crear perfil.', 'error');
+    }
+}
+
+async function deleteProfile(profileId) {
+    const target = profiles.find((p) => p.id === profileId);
+    if (!target) return;
+    const accepted = await confirmAction('Eliminar perfil', `Se eliminará el perfil “${target.name}”. Las cuentas que contenga se trasladarán automáticamente al perfil principal.`, 'Eliminar perfil');
+    if (!accepted || !rendererApi) return;
+    try {
+        const res = await rendererApi.deleteProfile(profileId);
+        profiles = res.profiles || profiles;
+        activeProfileId = res.activeProfileId || activeProfileId;
+        accounts = await rendererApi.getAccounts();
+        renderProfiles();
+        renderAccounts();
+        renderProfilesManager();
+        showToast('Perfil eliminado y cuentas trasladadas.');
+    } catch (err) {
+        showToast(err.message || 'No se pudo eliminar el perfil.', 'error');
+    }
 }
 
 function renderRuntime() {
     const encryption = $('encryptionState');
+    if (!encryption) return;
     const riot = $('riotState');
     const operation = $('operationState');
     const session = $('riotSessionState');
@@ -334,6 +557,7 @@ function getRankIconSvg(rank) {
 
 function renderActivity() {
     const list = $('activityList');
+    if (!list) return;
     list.textContent = '';
     if (!activity.length) {
         const empty = document.createElement('p');
@@ -428,21 +652,20 @@ function getAvatarKey(account) {
 
 function renderAccounts() {
     const query = elements.searchInput.value.trim().toLowerCase();
+    const profileAccounts = accounts.filter((account) => (account.profileId || 'default') === activeProfileId);
     const counts = {
-        valorant: accounts.filter((account) => account.game === 'valorant').length,
-        league_of_legends: accounts.filter((account) => account.game === 'league_of_legends').length
+        valorant: profileAccounts.filter((account) => account.game === 'valorant').length,
+        league_of_legends: profileAccounts.filter((account) => account.game === 'league_of_legends').length
     };
-    $('countAll').textContent = accounts.length;
+    $('countAll').textContent = profileAccounts.length;
     $('countVal').textContent = counts.valorant;
     $('countLol').textContent = counts.league_of_legends;
-    $('statAccounts').textContent = accounts.length;
-    $('statValorant').textContent = counts.valorant;
-    $('statLol').textContent = counts.league_of_legends;
+
     elements.gameTabs.querySelectorAll('.game-tab').forEach((button) => {
         button.setAttribute('aria-pressed', String(button.dataset.game === currentFilter));
     });
 
-    const filtered = accounts.filter((account) => {
+    const filtered = profileAccounts.filter((account) => {
         if (currentFilter !== 'all' && account.game !== currentFilter) return false;
         if (!query) return true;
         return [account.displayName, account.username, account.riotId, account.region, account.rank, account.notes].some((value) => String(value || '').toLowerCase().includes(query));
@@ -452,9 +675,9 @@ function renderAccounts() {
     if (!filtered.length) {
         const empty = document.createElement('div');
         empty.className = 'empty-state';
-        empty.innerHTML = accounts.length
+        empty.innerHTML = profileAccounts.length
             ? '<div class="empty-copy"><span class="eyebrow">SIN RESULTADOS</span><strong>Sin coincidencias</strong><p>Ajusta el filtro o la búsqueda para encontrar otra cuenta.</p><button class="btn secondary empty-clear" type="button">Limpiar filtros</button></div>'
-            : '<div class="empty-copy"><div class="empty-glyph" aria-hidden="true">+</div><span class="eyebrow">PRIMER DESPLIEGUE</span><strong>Tu bóveda está lista</strong><p>Registra tu primera cuenta cifrada para cambiar con 1 solo clic.</p><div class="empty-steps"><span><b>01</b>Registra</span><span><b>02</b>Confirma</span><span><b>03</b>Cambia</span></div><button class="btn primary empty-add" type="button">+ Añadir primera cuenta</button></div>';
+            : '<div class="empty-copy"><div class="empty-glyph" aria-hidden="true">+</div><span class="eyebrow">PERFIL ACTUAL</span><strong>Bóveda lista en este perfil</strong><p>Registra cuentas para este perfil o cambia a otro perfil en la barra superior.</p><button class="btn primary empty-add" type="button">+ Añadir cuenta al perfil</button></div>';
         elements.accountsList.append(empty);
         empty.querySelector('.empty-add')?.addEventListener('click', () => openAccountModal());
         empty.querySelector('.empty-clear')?.addEventListener('click', () => {
@@ -476,10 +699,13 @@ function renderAccounts() {
         const defaultPlayLabel = account.game === 'league_of_legends' ? 'Jugar LoL' : 'Jugar Valorant';
         const avatarKey = getAvatarKey(account);
         const avatarInitials = (account.avatarAgent || (account.game === 'league_of_legends' ? 'LoL' : 'Val')).slice(0, 2).toUpperCase();
+        const avatarContent = account.customAvatar
+            ? `<img class="custom-avatar-img" src="${escapeHtml(account.customAvatar)}" alt="${escapeHtml(account.displayName)}">`
+            : `<span>${avatarInitials}</span>`;
         card.innerHTML = `
             <div class="account-main">
                 <div class="account-avatar avatar-${escapeHtml(avatarKey)}" title="${escapeHtml(account.avatarAgent || (account.game === 'league_of_legends' ? 'LoL' : 'Valorant'))}">
-                    <span>${avatarInitials}</span>
+                    ${avatarContent}
                 </div>
                 <div class="account-copy">
                     <div class="account-topline">
@@ -501,10 +727,12 @@ function renderAccounts() {
                 <button class="card-action edit" type="button" aria-label="Editar cuenta" title="Editar cuenta">${iconSvg('edit')}</button>
                 <button class="card-action delete" type="button" aria-label="Eliminar cuenta" title="Eliminar cuenta">${iconSvg('trash')}</button>
                 <div class="play-group">
-                    <button class="play-btn" type="button"${isCurrent ? ' disabled data-current="true"' : ''}>
-                        ${isCurrent ? 'En uso' : `${getGameLogoSvg(defaultGame)} <span>${defaultPlayLabel}</span>`}
+                    <button class="play-btn" type="button">
+                        ${getGameLogoSvg(defaultGame)} <span>${defaultPlayLabel}</span>
                     </button>
-                    <button class="play-btn-drop" type="button" aria-label="Más opciones de juego" title="Opciones de inicio"${isCurrent ? ' disabled data-current="true"' : ''}>▾</button>
+                    <button class="play-btn-drop" type="button" aria-label="Más opciones de juego" title="Opciones de inicio">
+                        <svg viewBox="0 0 16 16" width="10" height="10" fill="currentColor" aria-hidden="true"><path d="M4 6l4 4 4-4z"/></svg>
+                    </button>
                     <div class="play-menu hidden">
                         <button class="play-menu-item opt-val" type="button">${getGameLogoSvg('valorant')} <span>Jugar Valorant</span></button>
                         <button class="play-menu-item opt-lol" type="button">${getGameLogoSvg('league_of_legends')} <span>Jugar League of Legends</span></button>
@@ -546,7 +774,7 @@ function renderAccounts() {
 }
 
 function setSwitchControlsDisabled(disabled) {
-    document.querySelectorAll('.play-btn, .play-btn-drop, .play-menu-item, .account-card .edit, .account-card .delete, #btnAdd, #btnSyncLiveRank').forEach((button) => { button.disabled = disabled || button.dataset.current === 'true'; });
+    document.querySelectorAll('.play-btn, .play-btn-drop, .play-menu-item, .account-card .edit, .account-card .delete, #btnAdd, #btnManageAccounts').forEach((button) => { button.disabled = disabled; });
 }
 
 function setActiveNav(tabName) {
@@ -582,6 +810,35 @@ function openAccountModal(account = null) {
     $('modalTitle').textContent = account ? 'Editar cuenta' : 'Añadir cuenta';
     const banner = $('autofillBanner');
     if (banner) banner.style.display = account ? 'none' : 'flex';
+
+    // Populate profile selector
+    const profileSelect = $('accProfile');
+    if (profileSelect) {
+        profileSelect.textContent = '';
+        for (const p of profiles) {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.name;
+            profileSelect.append(opt);
+        }
+        profileSelect.value = account?.profileId || activeProfileId || 'default';
+    }
+
+    // Custom avatar preview
+    const customAvatar = account?.customAvatar || '';
+    $('accCustomAvatar').value = customAvatar;
+    if (customAvatar) {
+        $('avatarPreviewImg').src = customAvatar;
+        $('avatarPreviewImg').classList.remove('hidden');
+        $('avatarPreviewFallback').classList.add('hidden');
+        $('btnRemoveCustomAvatar').classList.remove('hidden');
+    } else {
+        $('avatarPreviewImg').src = '';
+        $('avatarPreviewImg').classList.add('hidden');
+        $('avatarPreviewFallback').classList.remove('hidden');
+        $('btnRemoveCustomAvatar').classList.add('hidden');
+    }
+
     updateGameFields($('accGame').value, account?.rank, account?.avatarAgent);
     showModal(elements.accountModal);
 }
@@ -594,6 +851,7 @@ async function saveAccount(event) {
     try {
         accounts = await rendererApi.saveAccount({
             id: $('accId').value || undefined,
+            profileId: $('accProfile').value || activeProfileId || 'default',
             displayName: $('accDisplayName').value,
             game: $('accGame').value,
             region: $('accRegion').value,
@@ -603,10 +861,12 @@ async function saveAccount(event) {
             rank: $('accRank').value,
             level: $('accLevel').value,
             avatarAgent: $('accAvatar').value,
+            customAvatar: $('accCustomAvatar').value || '',
             notes: $('accNotes').value
         });
         hideModal(elements.accountModal);
         renderAccounts();
+        renderProfiles();
         showToast('Cuenta guardada y cifrada.', 'success');
         playSound('success');
     } catch (error) {
@@ -662,6 +922,7 @@ function resetSwitchActions() {
 function showSwitchOverlay(game, account = null) {
     switchPreviousFocus = document.activeElement;
     $('switchGame').textContent = GAME_LABELS[game] || 'RIOT SESSION';
+    document.querySelector('.switch-radar').innerHTML = getGameLogoSvg(game);
     $('switchTarget').textContent = account?.displayName ? `Destino · ${account.displayName}` : 'Cuenta destino';
     $('switchSource').textContent = runtimeStatus?.activeSession?.riotId || 'Sin sesión';
     $('switchDestination').textContent = account?.displayName || 'Cuenta destino';
@@ -701,9 +962,9 @@ function updateSwitchState(payload) {
     $('switchTitle').textContent = titleByState[state] || 'Cambio de cuenta en curso';
     $('switchMessage').textContent = payload.message;
     $('switchProgress').className = `progress-${progress}`;
-    elements.statusText.textContent = payload.message;
-    elements.statusCode.textContent = payload.errorCode || state.toUpperCase();
-    elements.statusBar.className = `status-bar ${['Error', 'WrongPassword', 'Timeout'].includes(state) ? 'error' : 'busy'}`;
+    if (elements.statusText) elements.statusText.textContent = payload.message;
+    if (elements.statusCode) elements.statusCode.textContent = payload.errorCode || state.toUpperCase();
+    if (elements.statusBar) elements.statusBar.className = `status-bar ${['Error', 'WrongPassword', 'Timeout'].includes(state) ? 'error' : 'busy'}`;
     const panel = document.querySelector('.switch-panel');
     panel.classList.remove('waiting');
     document.querySelectorAll('.switch-steps li').forEach((step, index) => {
@@ -744,9 +1005,24 @@ async function refreshAfterSwitch() {
     renderRuntime();
 }
 
+async function refreshRuntimeStatus() {
+    if (!rendererApi || activeRequestId) return;
+    try {
+        const prevSessionId = runtimeStatus?.activeSession?.riotId || '';
+        const prevGame = runtimeStatus?.runningGame || '';
+        runtimeStatus = await rendererApi.getRuntimeStatus();
+        renderRuntime();
+        const nextSessionId = runtimeStatus?.activeSession?.riotId || '';
+        const nextGame = runtimeStatus?.runningGame || '';
+        if (prevSessionId !== nextSessionId || prevGame !== nextGame) {
+            renderAccounts();
+        }
+    } catch {}
+}
+
 async function openSettings() {
     if (!rendererApi) {
-        settings ||= { startWithWindows: false, minimizeToTray: true, closeOnLaunch: false, confirmSwitch: true, autoLaunchGame: true, autoCloseRunningGames: true, autoSyncRank: true, globalShortcut: 'CommandOrControl+Alt+R', soundEnabled: true, reducedMotion: false, initialDelayMs: 1800, charDelayMs: 15, fieldDelayMs: 200, customRiotPath: '' };
+        settings ||= { startWithWindows: false, minimizeToTray: true, closeOnLaunch: false, confirmSwitch: true, autoLaunchGame: true, autoCloseRunningGames: true, autoSyncRank: true, globalShortcut: 'CommandOrControl+Alt+R', soundEnabled: true, reducedMotion: false, initialDelayMs: 1800, charDelayMs: 15, fieldDelayMs: 200, autoPlayTabs: 23, customRiotPath: '' };
         $('setStartWithWindows').checked = settings.startWithWindows;
         $('setMinimizeToTray').checked = settings.minimizeToTray;
         $('setCloseOnLaunch').checked = settings.closeOnLaunch;
@@ -760,6 +1036,7 @@ async function openSettings() {
         $('setInitialDelay').value = settings.initialDelayMs;
         $('setCharDelay').value = settings.charDelayMs;
         $('setFieldDelay').value = settings.fieldDelayMs;
+        $('setAutoPlayTabs').value = settings.autoPlayTabs ?? 23;
         $('setCustomRiotPath').value = settings.customRiotPath;
         showModal(elements.settingsModal);
         return;
@@ -782,6 +1059,7 @@ async function openSettings() {
         $('setInitialDelay').value = settings.initialDelayMs;
         $('setCharDelay').value = settings.charDelayMs;
         $('setFieldDelay').value = settings.fieldDelayMs;
+        $('setAutoPlayTabs').value = settings.autoPlayTabs ?? 23;
         $('setCustomRiotPath').value = settings.customRiotPath || '';
         $('testRiotStatus').textContent = '';
         showModal(elements.settingsModal);
@@ -832,6 +1110,7 @@ async function saveSettings(event) {
             initialDelayMs: $('setInitialDelay').value,
             charDelayMs: $('setCharDelay').value,
             fieldDelayMs: $('setFieldDelay').value,
+            autoPlayTabs: $('setAutoPlayTabs').value,
             customRiotPath: $('setCustomRiotPath').value
         });
         applyMotionPreference();
@@ -880,18 +1159,61 @@ async function autofillSessionFromRiot() {
     }
 }
 
-function openProfile() {
-    $('inputProfileUsername').value = profile.username || '';
-    showModal(elements.profileModal);
-}
+function setupCustomAvatarUploader() {
+    const btnUpload = $('btnUploadAvatar');
+    const fileInput = $('inputCustomAvatar');
+    const btnRemove = $('btnRemoveCustomAvatar');
+    const previewImg = $('avatarPreviewImg');
+    const fallbackText = $('avatarPreviewFallback');
+    const hiddenInput = $('accCustomAvatar');
 
-async function saveProfile(event) {
-    event.preventDefault();
-    if (!rendererApi) return;
-    profile = await rendererApi.saveUserProfile({ username: $('inputProfileUsername').value });
-    renderProfile();
-    hideModal(elements.profileModal);
-    showToast('Perfil local actualizado.');
+    btnUpload?.addEventListener('click', () => fileInput?.click());
+
+    fileInput?.addEventListener('change', () => {
+        const file = fileInput.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            showToast('Por favor selecciona un archivo de imagen.', 'error');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const maxDim = 128;
+                let w = img.width;
+                let h = img.height;
+                if (w > h) {
+                    if (w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
+                } else {
+                    if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; }
+                }
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                const dataUrl = canvas.toDataURL('image/png');
+                hiddenInput.value = dataUrl;
+                previewImg.src = dataUrl;
+                previewImg.classList.remove('hidden');
+                fallbackText.classList.add('hidden');
+                btnRemove.classList.remove('hidden');
+                fileInput.value = '';
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+
+    btnRemove?.addEventListener('click', () => {
+        hiddenInput.value = '';
+        previewImg.src = '';
+        previewImg.classList.add('hidden');
+        fallbackText.classList.remove('hidden');
+        btnRemove.classList.add('hidden');
+        if (fileInput) fileInput.value = '';
+    });
 }
 
 function bindEvents() {
@@ -899,7 +1221,25 @@ function bindEvents() {
     $('btnClose').addEventListener('click', () => rendererApi?.closeWindow());
     $('btnAdd').addEventListener('click', () => openAccountModal());
     $('btnAutofillSession').addEventListener('click', autofillSessionFromRiot);
-    $('userPill').addEventListener('click', openProfile);
+    
+    // Profile Dropdown & Pill
+    $('userPill').addEventListener('click', (event) => {
+        event.stopPropagation();
+        const dropdown = $('profileDropdown');
+        dropdown.classList.toggle('hidden');
+        $('userPill').classList.toggle('active', !dropdown.classList.contains('hidden'));
+    });
+    $('btnManageProfiles').addEventListener('click', (event) => {
+        event.stopPropagation();
+        openProfilesManager();
+    });
+    $('btnQuickCreateProfile').addEventListener('click', (event) => {
+        event.stopPropagation();
+        openQuickCreateProfile();
+    });
+    $('btnCloseProfilesModal').addEventListener('click', () => hideModal(elements.profilesModal));
+    $('btnCloseProfilesManager').addEventListener('click', () => hideModal(elements.profilesModal));
+    $('createProfileForm').addEventListener('submit', createProfileFromBar);
 
     $('btnCloseAccountModal').addEventListener('click', () => hideModal(elements.accountModal));
     $('btnCancelAccount').addEventListener('click', () => hideModal(elements.accountModal));
@@ -940,22 +1280,9 @@ function bindEvents() {
         }
     });
 
-    $('btnSyncLiveRank').addEventListener('click', async () => {
-        $('btnSyncLiveRank').disabled = true;
-        showToast('Consultando rango en vivo con Riot Client…');
-        try {
-            const res = await rendererApi.syncLiveRank();
-            if (res && res.synced) {
-                showToast(`✓ Rango sincronizado: ${res.account?.rank || 'Actualizado'}`, 'success');
-                refreshAfterSwitch();
-            } else {
-                showToast('No se detectó sesión activa de Riot para sincronizar.');
-            }
-        } catch (err) {
-            showToast(err.message || 'Error al sincronizar rango.', 'error');
-        } finally {
-            $('btnSyncLiveRank').disabled = false;
-        }
+    $('btnManageAccounts')?.addEventListener('click', () => {
+        showToast('Gestión de cuentas (copiar a perfiles) llegará en la próxima versión.', 'info');
+        playSound();
     });
 
     if (rendererApi?.onGlobalShortcut) {
@@ -971,9 +1298,23 @@ function bindEvents() {
             if (Array.isArray(updatedAccounts)) {
                 accounts = updatedAccounts;
                 renderAccounts();
+                renderProfiles();
             }
         });
     }
+
+    if (rendererApi?.onProfilesUpdated) {
+        rendererApi.onProfilesUpdated((profData) => {
+            if (profData?.profiles) {
+                profiles = profData.profiles;
+                activeProfileId = profData.activeProfileId || activeProfileId;
+                renderProfiles();
+                renderAccounts();
+            }
+        });
+    }
+
+    setupCustomAvatarUploader();
 
     $('accountForm').addEventListener('submit', saveAccount);
     $('settingsForm').addEventListener('submit', saveSettings);
@@ -1005,12 +1346,38 @@ function bindEvents() {
         }
         setView(button.dataset.tab, button.dataset.tab === 'accounts');
     });
-    $('themePicker').addEventListener('click', (event) => {
-        const button = event.target.closest('.theme-dot');
+    $('btnCloseThemesModal')?.addEventListener('click', () => hideModal(elements.themesModal));
+    $('btnCloseThemesModalBtn')?.addEventListener('click', () => hideModal(elements.themesModal));
+
+    $('modalStyleCards')?.addEventListener('click', (event) => {
+        const button = event.target.closest('.style-card');
         if (!button) return;
-        applyTheme(button.dataset.theme);
+        applyStyle(button.dataset.style);
         playSound();
     });
+
+    $('modalColorSwatches')?.addEventListener('click', (event) => {
+        const button = event.target.closest('.color-swatch');
+        if (!button) return;
+        applyColor(button.dataset.color || button.dataset.theme);
+        playSound();
+    });
+
+    $('settingsStyleCards')?.addEventListener('click', (event) => {
+        const button = event.target.closest('.style-card');
+        if (!button) return;
+        applyStyle(button.dataset.style);
+        playSound();
+    });
+
+    $('settingsColorSwatches')?.addEventListener('click', (event) => {
+        const button = event.target.closest('.color-swatch');
+        if (!button) return;
+        applyColor(button.dataset.color || button.dataset.theme);
+        playSound();
+    });
+
+
 
     $('btnDismissBanner').addEventListener('click', () => $('updateBanner').classList.add('hidden'));
     $('btnBannerUpdate').addEventListener('click', () => {
@@ -1027,6 +1394,10 @@ function bindEvents() {
             if (openModal === elements.confirmModal) settleConfirmation(false);
             else if (openModal) hideModal(openModal);
             else if (elements.switchOverlay.classList.contains('active')) closeSwitchOverlay();
+            else {
+                $('profileDropdown')?.classList.add('hidden');
+                $('userPill')?.classList.remove('active');
+            }
         } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
             if (!openModal) {
                 event.preventDefault();
@@ -1052,24 +1423,33 @@ function bindEvents() {
         }
     });
     document.addEventListener('click', (event) => {
-        addClickRipple(event);
         if (!event.target.closest('.play-group')) {
             document.querySelectorAll('.play-menu').forEach((menu) => menu.classList.add('hidden'));
         }
+        if (!event.target.closest('.profile-select-wrap')) {
+            $('profileDropdown')?.classList.add('hidden');
+            $('userPill')?.classList.remove('active');
+        }
     });
     window.addEventListener('mousemove', (event) => {
-        mousePos.x = event.clientX;
-        mousePos.y = event.clientY;
-    });
+        pendingMousePos.x = event.clientX;
+        pendingMousePos.y = event.clientY;
+    }, { passive: true });
     window.addEventListener('mouseleave', () => {
-        mousePos.x = -1000;
-        mousePos.y = -1000;
+        pendingMousePos.x = -1000;
+        pendingMousePos.y = -1000;
+    }, { passive: true });
+    window.addEventListener('blur', () => { isWindowActive = false; });
+    window.addEventListener('focus', () => {
+        isWindowActive = true;
+        refreshRuntimeStatus();
     });
     window.addEventListener('resize', initCanvas);
 }
 
 async function initialize() {
-    applyTheme(localStorage.getItem('theme') || 'red');
+    applyStyle(localStorage.getItem('style') || 'oled', false);
+    applyColor(localStorage.getItem('color') || localStorage.getItem('theme') || 'red', false);
     document.body.dataset.view = currentView;
     bindEvents();
     initCanvas();
@@ -1078,17 +1458,32 @@ async function initialize() {
     if (!rendererApi) {
         settings = { soundEnabled: true, reducedMotion: false, confirmSwitch: true };
         runtimeStatus = { encryptionAvailable: true, riotClientFound: true, activeRequestId: null };
-        renderProfile(); renderRuntime(); renderActivity(); renderAccounts();
-        elements.statusText.textContent = 'Vista previa local';
+        renderProfiles(); renderRuntime(); renderActivity(); renderAccounts();
+        if (elements.statusText) elements.statusText.textContent = 'Vista previa local';
         return;
     }
 
     try {
-        [accounts, activity, profile, settings, runtimeStatus] = await Promise.all([
-            rendererApi.getAccounts(), rendererApi.getActivityLog(), rendererApi.getUserProfile(), rendererApi.getSettings(), rendererApi.getRuntimeStatus()
+        const [accs, acts, profData, setts, runStatus] = await Promise.all([
+            rendererApi.getAccounts(),
+            rendererApi.getActivityLog(),
+            rendererApi.getProfiles ? rendererApi.getProfiles() : rendererApi.getUserProfile(),
+            rendererApi.getSettings(),
+            rendererApi.getRuntimeStatus()
         ]);
-        activeRequestId = runtimeStatus.activeRequestId || null;
-        renderProfile();
+        accounts = accs || [];
+        activity = acts || [];
+        if (profData && Array.isArray(profData.profiles)) {
+            profiles = profData.profiles;
+            activeProfileId = profData.activeProfileId || 'default';
+        } else if (profData && profData.username) {
+            profiles = [{ id: 'default', name: profData.username, createdAt: profData.createdAt || 0 }];
+            activeProfileId = 'default';
+        }
+        settings = setts;
+        runtimeStatus = runStatus;
+        activeRequestId = runtimeStatus?.activeRequestId || null;
+        renderProfiles();
         renderRuntime();
         renderActivity();
         renderAccounts();
@@ -1096,6 +1491,11 @@ async function initialize() {
         setSwitchControlsDisabled(Boolean(activeRequestId));
         if (activeRequestId) showSwitchOverlay('valorant', accounts[0] || null);
         rendererApi.onSwitchState(updateSwitchState);
+        setInterval(() => {
+            if (isWindowActive && !document.hidden && !activeRequestId) {
+                refreshRuntimeStatus();
+            }
+        }, 5000);
         if (rendererApi.onUpdateStatus) {
             rendererApi.onUpdateStatus((payload) => {
                 if (!payload) return;
@@ -1133,9 +1533,9 @@ async function initialize() {
             });
         }
     } catch (error) {
-        elements.statusBar.classList.add('error');
-        elements.statusText.textContent = 'No se pudieron cargar los datos locales.';
-        elements.statusCode.textContent = 'INIT_ERROR';
+        if (elements.statusBar) elements.statusBar.classList.add('error');
+        if (elements.statusText) elements.statusText.textContent = 'No se pudieron cargar los datos locales.';
+        if (elements.statusCode) elements.statusCode.textContent = 'INIT_ERROR';
         showToast(error.message || 'Error de inicialización.', 'error');
     }
 }

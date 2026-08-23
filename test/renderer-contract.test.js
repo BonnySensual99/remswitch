@@ -33,3 +33,25 @@ test('el renderer no colisiona con la API expuesta por contextBridge', () => {
     assert.match(js, /^const rendererApi = window\.api \|\| null;/m);
     assert.doesNotMatch(js, /^const api\s*=/m);
 });
+
+test('los botones de inicio de juego permanecen activos y no bloquean la cuenta activa', () => {
+    assert.doesNotMatch(js, /disabled data-current="true"/);
+    assert.match(js, /refreshRuntimeStatus/);
+});
+
+test('el renderer incluye soporte de multi-perfiles y avatares personalizados', () => {
+    assert.match(html, /id="profileDropdown"/);
+    assert.match(html, /id="profilesModal"/);
+    assert.match(html, /id="accCustomAvatar"/);
+    assert.match(js, /selectProfile/);
+    assert.match(js, /setupCustomAvatarUploader/);
+});
+
+test('el renderer incluye soporte de estilos visuales y paleta de colores', () => {
+    assert.match(html, /id="themesModal"/);
+    assert.match(html, /id="settingsStyleCards"/);
+    assert.match(html, /id="settingsColorSwatches"/);
+    assert.match(js, /applyStyle/);
+    assert.match(js, /applyColor/);
+});
+
