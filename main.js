@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, safeStorage, session, globalShortcut } = require('electron');
+﻿const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, safeStorage, session, globalShortcut } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
@@ -361,8 +361,7 @@ async function startAccountSwitch(accountId, requestId, targetGame = null) {
                     await shell.openPath(shortcutPath);
                 }
 
-                // MAGIC FALLBACK: Send 23 Tabs and Enter to click "Play" manually
-                await delay(4000);
+                // MAGIC FALLBACK: Send Tabs and Enter to click "Play" manually
                 const psScript = `
 Add-Type -TypeDefinition @"
 using System;
@@ -433,7 +432,7 @@ if ($tabs -gt 0) {
             if (effectiveGame && GAME_ARGS[effectiveGame]) {
                 const gameLabel = effectiveGame === 'league_of_legends' ? 'League of Legends' : 'VALORANT';
                 emitSwitch({ ...payloadBase, state: 'LaunchingGame', message: `Iniciando ${gameLabel}…` });
-                await delay(3000);
+                
                 
                 // Intentar los métodos oficiales
                 const { shell } = require('electron');
@@ -447,8 +446,7 @@ if ($tabs -gt 0) {
                     await shell.openPath(shortcutPath);
                 }
 
-                // MAGIC FALLBACK: Send 23 Tabs and Enter to click "Play" manually
-                await delay(4000);
+                // MAGIC FALLBACK: Send Tabs and Enter to click "Play" manually
                 const psScript = `
 Add-Type -TypeDefinition @"
 using System;
@@ -1137,4 +1135,6 @@ app.on('window-all-closed', () => {
         }
     }
 });
+
+
 
