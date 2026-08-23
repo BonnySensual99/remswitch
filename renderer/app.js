@@ -1059,6 +1059,7 @@ async function openSettings() {
         $('setInitialDelay').value = settings.initialDelayMs;
         $('setCharDelay').value = settings.charDelayMs;
         $('setFieldDelay').value = settings.fieldDelayMs;
+        $('setAutoPlayPreDelayMs').value = settings.autoPlayPreDelayMs ?? 1500;
         $('setAutoPlayTabs').value = settings.autoPlayTabs ?? 19;
         $('setCustomRiotPath').value = settings.customRiotPath || '';
         $('testRiotStatus').textContent = '';
@@ -1110,6 +1111,7 @@ async function saveSettings(event) {
             initialDelayMs: $('setInitialDelay').value,
             charDelayMs: $('setCharDelay').value,
             fieldDelayMs: $('setFieldDelay').value,
+            autoPlayPreDelayMs: $('setAutoPlayPreDelayMs').value,
             autoPlayTabs: $('setAutoPlayTabs').value,
             customRiotPath: $('setCustomRiotPath').value
         });
@@ -1541,4 +1543,6 @@ async function initialize() {
 }
 
 initialize();
+
+
 

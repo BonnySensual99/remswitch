@@ -33,6 +33,7 @@ const DEFAULT_SETTINGS = Object.freeze({
     initialDelayMs: 1800,
     charDelayMs: 15,
     fieldDelayMs: 200,
+    autoPlayPreDelayMs: 1500,
     autoPlayTabs: 19,
     autoPlayTabDelayMs: 50,
     customRiotPath: ''
@@ -376,7 +377,8 @@ if ($proc) {
     [Win32]::SetForegroundWindow($proc.MainWindowHandle)
 }
 Add-Type -AssemblyName System.Windows.Forms
-Start-Sleep -Milliseconds 1500
+$preDelay = ${settings.autoPlayPreDelayMs ?? 1500}
+  if ($preDelay -gt 0) { Start-Sleep -Milliseconds $preDelay }
 $tabs = ${settings.autoPlayTabs ?? 23}
 if ($tabs -gt 0) {
     for ($i=0; $i -lt $tabs; $i++) {
@@ -461,7 +463,8 @@ if ($proc) {
     [Win32]::SetForegroundWindow($proc.MainWindowHandle)
 }
 Add-Type -AssemblyName System.Windows.Forms
-Start-Sleep -Milliseconds 1500
+$preDelay = ${settings.autoPlayPreDelayMs ?? 1500}
+  if ($preDelay -gt 0) { Start-Sleep -Milliseconds $preDelay }
 $tabs = ${settings.autoPlayTabs ?? 23}
 if ($tabs -gt 0) {
     for ($i=0; $i -lt $tabs; $i++) {
@@ -1134,3 +1137,4 @@ app.on('window-all-closed', () => {
         }
     }
 });
+
