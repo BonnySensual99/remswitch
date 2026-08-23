@@ -1059,7 +1059,7 @@ async function openSettings() {
         $('setInitialDelay').value = settings.initialDelayMs;
         $('setCharDelay').value = settings.charDelayMs;
         $('setFieldDelay').value = settings.fieldDelayMs;
-        $('setAutoPlayTabs').value = settings.autoPlayTabs ?? 23;
+        $('setAutoPlayTabs').value = settings.autoPlayTabs ?? 19;
         $('setCustomRiotPath').value = settings.customRiotPath || '';
         $('testRiotStatus').textContent = '';
         showModal(elements.settingsModal);

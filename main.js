@@ -33,7 +33,7 @@ const DEFAULT_SETTINGS = Object.freeze({
     initialDelayMs: 1800,
     charDelayMs: 15,
     fieldDelayMs: 200,
-    autoPlayTabs: 23,
+    autoPlayTabs: 19,
     customRiotPath: ''
 });
 
