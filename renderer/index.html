@@ -92,7 +92,7 @@
 
             <section class="command-bar" aria-label="Filtros de cuentas">
                 <div class="game-tabs" id="gameTabs">
-                    <button class="game-tab active" data-game="all" type="button">Todas <span id="countAll">0</span></button>
+                    <button class="game-tab active" data-game="all" type="button">Todas <span id="countAll">0</span>�</button>
                     <button class="game-tab" data-game="league_of_legends" type="button">
                         <span class="tab-game-icon lol-icon"><svg viewBox="0 0 100 100"><path fill="currentColor" d="M22 14h18v54h32v18H22V14zm58 10v40l-14-8V24h14z"/></svg></span> LoL <span id="countLol">0</span>
                     </button>
@@ -139,7 +139,7 @@
                     <div class="form-group"><label for="accGame">Juego principal *</label><select id="accGame"><option value="valorant">VALORANT</option><option value="league_of_legends">League of Legends</option></select></div>
                     <div class="form-group"><label for="accRegion">Región *</label><select id="accRegion"><option value="EU">EU</option><option value="NA">NA</option><option value="LATAM">LATAM</option><option value="KR">KR</option><option value="AP">AP</option><option value="BR">BR</option></select></div>
                     <div class="form-group"><label for="accUsername">Usuario de Riot *</label><input type="text" id="accUsername" required autocomplete="off" placeholder="Usuario privado"></div>
-                    <div class="form-group"><label for="accPassword" id="accPasswordLabel">Contraseña *</label><div class="password-wrap"><input type="password" id="accPassword" required autocomplete="new-password" placeholder="••••••••"><button id="btnTogglePass" type="button" aria-label="Mostrar contraseña"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c5.5 0 9.5 5.3 9.5 7s-4 7-9.5 7S2.5 13.7 2.5 12 6.5 5 12 5Zm0 2c-3.8 0-6.8 3.3-7.4 5 .6 1.7 3.6 5 7.4 5s6.8-3.3 7.4-5c-.6-1.7-3.6-5-7.4-5Zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z"/></svg></button></div><small class="form-hint" id="accPasswordHint">Se cifra con DPAPI en este equipo.</small></div>
+                    <div class="form-group"><label for="accPassword" id="accPasswordLabel">Contraseña *</label><div class="password-wrap"><input type="password" id="accPassword" required autocomplete="new-password" placeholder="••••••••"><button id="btnTogglePass" type="button" aria-label="Mostrar contraseña"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c5.5 0 9.5 5.3 9.5 7s-4 7-9.5 7S2.5 13.7 2.5 12 6.5 5 12 5Zm0 2c-3.8 0-6.8 3.3-7.4 5 .6 1.7 3.6 5 7.4 5s6.8-3.3 7.4-5c-.6-1.7-3.6-5-7.4-5Zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z"/></svg>�</button></div><small class="form-hint" id="accPasswordHint">Se cifra con DPAPI en este equipo.</small></div>
                     <div class="form-group"><label for="accRiotId">Riot ID</label><input type="text" id="accRiotId" placeholder="Nombre#TAG"></div>
                     <div class="form-group"><label for="accRank">Rango competitivo</label><select id="accRank"></select></div>
                     <div class="form-group"><label for="accLevel">Nivel</label><input type="number" id="accLevel" min="1" max="9999" placeholder="Nivel actual"></div>
@@ -154,7 +154,7 @@
                             </div>
                             <div class="avatar-uploader-actions">
                                 <input type="file" id="inputCustomAvatar" accept="image/png, image/jpeg, image/webp, image/svg+xml, image/gif" class="hidden">
-                                <button type="button" class="btn secondary small" id="btnUploadAvatar">?? Subir imagen propia</button>
+                                <button type="button" class="btn secondary small" id="btnUploadAvatar"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="margin-right: 6px;"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Subir imagen propia</button>
                                 <button type="button" class="btn secondary small danger hidden" id="btnRemoveCustomAvatar">Usar personaje por defecto</button>
                                 <small class="form-hint">PNG, JPG, WEBP o SVG (se adapta autom�ticamente).</small>
                             </div>
@@ -180,11 +180,11 @@
                 <div class="settings-layout">
                     <!-- Sidebar Tabs -->
                     <nav class="settings-sidebar" aria-label="Pestañas de ajustes">
-                        <button type="button" class="settings-tab-btn active" data-tab="tab-general">General</button>
-                        <button type="button" class="settings-tab-btn" data-tab="tab-experiencia">Juego y Experiencia</button>
-                        <button type="button" class="settings-tab-btn" data-tab="tab-atajos">Atajos</button>
-                        <button type="button" class="settings-tab-btn" data-tab="tab-avanzado">Avanzado</button>
-                        <button type="button" class="settings-tab-btn" data-tab="tab-actualizaciones">Actualizaciones</button>
+                        <button type="button" class="settings-tab-btn active" data-tab="tab-general"><svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg> General & Interfaz</button>
+                        <button type="button" class="settings-tab-btn" data-tab="tab-experiencia"><svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16" fill="currentColor"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm3-3c-.83 0-1.5-.67-1.5-1.5S17.67 9 18.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg> Juego y Sesiones</button>
+                        <button type="button" class="settings-tab-btn" data-tab="tab-atajos"><svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16" fill="currentColor"><path d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/></svg> Atajos</button>
+                        <button type="button" class="settings-tab-btn" data-tab="tab-avanzado"><svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16" fill="currentColor"><path d="M19.4 13l.1-1-.1-1 2-1.5-2-3.4-2.4 1a8 8 0 0 0-1.8-1L15 3.5h-4l-.3 2.6a8 8 0 0 0-1.8 1l-2.4-1-2 3.4 2 1.5-.1 1 .1 1-2 1.5 2 3.4 2.4-1a8 8 0 0 0 1.8 1l.3 2.6h4l.3-2.6a8 8 0 0 0 1.8-1l2.4 1 2-3.4-2-1.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg> Avanzado y Sistema</button>
+                        <button type="button" class="settings-tab-btn" data-tab="tab-actualizaciones"><svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg> Actualizaciones</button>
                     </nav>
 
                     <!-- Tab Contents -->
@@ -196,8 +196,10 @@
                             <label class="switch-row"><span><strong>Minimizar a bandeja</strong><small>El botón cerrar mantendrá la app disponible</small></span><input type="checkbox" id="setMinimizeToTray"></label>
                             <label class="switch-row"><span><strong>Cerrar tras lanzar</strong><small>Finaliza RemSwitcher al abrir el juego</small></span><input type="checkbox" id="setCloseOnLaunch"></label>
                             
-                            <h3 style="margin-top:20px;">Seguridad</h3>
-                            <label class="switch-row"><span><strong>Confirmar cambios</strong><small>Pide confirmación antes de cerrar Riot Client</small></span><input type="checkbox" id="setConfirmSwitch"></label>
+                                                                                
+                            <h3 style="margin-top:20px;">Interfaz y Apariencia</h3>
+                            <label class="switch-row"><span><strong>Animaciones reducidas</strong><small>Desactiva transiciones y el fondo animado</small></span><input type="checkbox" id="setReducedMotion"></label>
+                            <label class="switch-row"><span><strong>Efectos de sonido</strong><small>Notificaciones y clics de la interfaz</small></span><input type="checkbox" id="setSoundEnabled"></label>
                         </div>
 
                         <!-- Pestaña: Experiencia -->
@@ -207,9 +209,9 @@
                             <label class="switch-row"><span><strong>Cerrar juego al cambiar</strong><small>Cierra Valorant o LoL automáticamente para no bloquear el cambio</small></span><input type="checkbox" id="setAutoCloseRunningGames"></label>
                             <label class="switch-row"><span><strong>Auto-sincronizar rango y nivel</strong><small>Detecta tu rango y nivel real mientras juegas</small></span><input type="checkbox" id="setAutoSyncRank"></label>
                             
-                            <h3 style="margin-top:20px;">Interfaz</h3>
-                            <label class="switch-row"><span><strong>Sonidos de interfaz</strong><small>Señales locales para acciones importantes</small></span><input type="checkbox" id="setSoundEnabled"></label>
-                            <label class="switch-row"><span><strong>Reducir movimiento</strong><small>Desactiva partículas y transiciones intensas</small></span><input type="checkbox" id="setReducedMotion"></label>
+                                                                                                            
+                            <h3 style="margin-top:20px;">Seguridad de sesión</h3>
+                            <label class="switch-row"><span><strong>Pedir confirmación de cambio</strong><small>Mostrar aviso antes de cerrar el cliente actual</small></span><input type="checkbox" id="setConfirmSwitch"></label>
                         </div>
 
                         <!-- Pestaña: Atajos -->
@@ -351,44 +353,11 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     
-<div class="hidden">
-<div id="accCustomAvatar"></div>
-<div id="accProfile"></div>
-<div id="activityList"></div>
-<div id="avatarPreviewFallback"></div>
-<div id="avatarPreviewImg"></div>
-<div id="btnCloseProfilesManager"></div>
-<div id="btnCloseProfilesModal"></div>
-<div id="btnCloseThemesModal"></div>
-<div id="btnCloseThemesModalBtn"></div>
-<div id="btnManageProfiles"></div>
-<div id="btnQuickCreateProfile"></div>
-<div id="btnRemoveCustomAvatar"></div>
-<div id="btnUploadAvatar"></div>
-<form id="createProfileForm"></form>
-<div id="editProfileId"></div>
-<div id="encryptionState"></div>
-<div id="gameProcessState"></div>
-<div id="inputCustomAvatar"></div>
-<div id="inputNewProfileName"></div>
-<div id="modalColorSwatches"></div>
-<div id="modalStyleCards"></div>
-<div id="operationState"></div>
-<div id="profileDropdown"></div>
-<div id="profileList"></div>
-<div id="profilesManagerList"></div>
-<div id="profilesModal"></div>
-<div id="riotSessionState"></div>
-<div id="riotState"></div>
-<div id="settingsColorSwatches"></div>
-<div id="settingsStyleCards"></div>
-<div id="themesModal"></div>
-<div id="themePicker"></div>
-<div id="btnCloseSwitch"></div>
-</div>
 <script src="app.js"></script>
 </body>
 </html>
+
+
 
 
 

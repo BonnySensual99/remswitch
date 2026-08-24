@@ -1022,7 +1022,7 @@ async function refreshRuntimeStatus() {
 
 async function openSettings() {
     if (!rendererApi) {
-        settings ||= { startWithWindows: false, minimizeToTray: true, closeOnLaunch: false, confirmSwitch: true, autoLaunchGame: true, autoCloseRunningGames: true, autoSyncRank: true, globalShortcut: 'CommandOrControl+Alt+R', soundEnabled: true, reducedMotion: false, initialDelayMs: 1800, charDelayMs: 15, fieldDelayMs: 200, autoPlayTabs: 23, customRiotPath: '' };
+        settings ||= { startWithWindows: false, minimizeToTray: true, closeOnLaunch: false, confirmSwitch: true, autoLaunchGame: true, autoCloseRunningGames: true, autoSyncRank: true, globalShortcut: 'CommandOrControl+Alt+R', soundEnabled: true, reducedMotion: false, initialDelayMs: 1800, charDelayMs: 15, fieldDelayMs: 200, customRiotPath: '' };
         $('setStartWithWindows').checked = settings.startWithWindows;
         $('setMinimizeToTray').checked = settings.minimizeToTray;
         $('setCloseOnLaunch').checked = settings.closeOnLaunch;
@@ -1550,6 +1550,7 @@ async function initialize() {
 }
 
 initialize();
+
 
 
 
