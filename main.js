@@ -1,4 +1,4 @@
-Ôªøconst { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, safeStorage, session, globalShortcut } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, safeStorage, session, globalShortcut } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
@@ -33,9 +33,6 @@ const DEFAULT_SETTINGS = Object.freeze({
     initialDelayMs: 1800,
     charDelayMs: 15,
     fieldDelayMs: 200,
-    autoPlayPreDelayMs: 1500,
-    autoPlayTabs: 19,
-    autoPlayTabDelayMs: 50,
     customRiotPath: ''
 });
 
@@ -91,16 +88,16 @@ function toPublicAccount(account) {
 }
 
 function encryptPassword(plainText) {
-    if (!plainText) throw new Error('La contrase√±a es obligatoria.');
+    if (!plainText) throw new Error('La contraseÒa es obligatoria.');
     if (!safeStorage.isEncryptionAvailable()) {
-        throw new Error('Windows DPAPI no est√° disponible para cifrar la contrase√±a.');
+        throw new Error('Windows DPAPI no est· disponible para cifrar la contraseÒa.');
     }
     return `v2:${safeStorage.encryptString(plainText).toString('base64')}`;
 }
 
 function decryptLegacyDpapi(encryptedData) {
     if (!/^[A-Za-z0-9+/=]+$/.test(encryptedData) || encryptedData.length > 32768) {
-        throw new Error('El formato de contrase√±a antigua no es v√°lido.');
+        throw new Error('El formato de contraseÒa antigua no es v·lido.');
     }
     const script = `Add-Type -AssemblyName System.Security;[Console]::OutputEncoding=[Text.Encoding]::UTF8;$d=[System.Security.Cryptography.ProtectedData]::Unprotect([Convert]::FromBase64String('${encryptedData}'),$null,[System.Security.Cryptography.DataProtectionScope]::CurrentUser);[Convert]::ToBase64String($d)`;
     const result = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
@@ -115,7 +112,7 @@ function decryptLegacyDpapi(encryptedData) {
 function decryptAccountPassword(account) {
     const encrypted = account.encryptedPassword || '';
     if (encrypted.startsWith('v2:')) {
-        if (!safeStorage.isEncryptionAvailable()) throw new Error('Windows DPAPI no est√° disponible.');
+        if (!safeStorage.isEncryptionAvailable()) throw new Error('Windows DPAPI no est· disponible.');
         const encryptedBuffer = Buffer.from(encrypted.slice(3), 'base64');
         try {
             return safeStorage.decryptString(encryptedBuffer);
@@ -135,7 +132,7 @@ function decryptAccountPassword(account) {
             return plainText;
         }
     }
-    if (!encrypted) throw new Error('La cuenta no tiene una contrase√±a guardada.');
+    if (!encrypted) throw new Error('La cuenta no tiene una contraseÒa guardada.');
 
     const plainText = decryptLegacyDpapi(encrypted);
     account.encryptedPassword = encryptPassword(plainText);
@@ -174,12 +171,12 @@ let riotSignatureCache = new Map();
 function validateRiotExecutable(inputPath, verifySignature = false) {
     const resolved = path.resolve(String(inputPath || ''));
     if (path.basename(resolved).toLowerCase() !== 'riotclientservices.exe' || !fs.existsSync(resolved)) {
-        throw new Error('Selecciona un RiotClientServices.exe v√°lido.');
+        throw new Error('Selecciona un RiotClientServices.exe v·lido.');
     }
     if (verifySignature) {
         if (riotSignatureCache.has(resolved)) {
             if (!riotSignatureCache.get(resolved)) {
-                throw new Error('El ejecutable no tiene una firma v√°lida de Riot Games.');
+                throw new Error('El ejecutable no tiene una firma v·lida de Riot Games.');
             }
             return resolved;
         }
@@ -194,7 +191,7 @@ function validateRiotExecutable(inputPath, verifySignature = false) {
         riotSignatureCache.set(resolved, isValid);
         
         if (!isValid) {
-            throw new Error('El ejecutable no tiene una firma v√°lida de Riot Games.');
+            throw new Error('El ejecutable no tiene una firma v·lida de Riot Games.');
         }
     }
     return resolved;
@@ -202,7 +199,7 @@ function validateRiotExecutable(inputPath, verifySignature = false) {
 
 function resolveValidatedRiotClient() {
     const foundPath = findRiotClientPath();
-    if (!foundPath) throw Object.assign(new Error('No se encontr√≥ RiotClientServices.exe.'), { code: 'RIOT_NOT_FOUND' });
+    if (!foundPath) throw Object.assign(new Error('No se encontrÛ RiotClientServices.exe.'), { code: 'RIOT_NOT_FOUND' });
     try {
         return validateRiotExecutable(foundPath, true);
     } catch (error) {
@@ -290,12 +287,12 @@ function emitSwitch(payload) {
 
 async function waitForAuthenticatedSession(account, payloadBase) {
     const deadline = Date.now() + 90000;
-    emitSwitch({ ...payloadBase, state: 'WaitingForAuthentication', message: 'Esperando confirmaci√≥n de Riot. Completa el MFA si aparece.' });
+    emitSwitch({ ...payloadBase, state: 'WaitingForAuthentication', message: 'Esperando confirmaciÛn de Riot. Completa el MFA si aparece.' });
     while (Date.now() < deadline) {
         const sessionInfo = await queryRiotSession();
         if (sessionInfo) {
             if (account.riotId && sessionInfo.riotId.toLowerCase() !== account.riotId.toLowerCase()) {
-                const error = new Error(`Riot inici√≥ otra cuenta (${sessionInfo.riotId}).`);
+                const error = new Error(`Riot iniciÛ otra cuenta (${sessionInfo.riotId}).`);
                 error.code = 'ACCOUNT_MISMATCH';
                 throw error;
             }
@@ -303,7 +300,7 @@ async function waitForAuthenticatedSession(account, payloadBase) {
         }
         await delay(1000);
     }
-    const error = new Error('Riot no confirm√≥ la sesi√≥n a tiempo. Revisa la contrase√±a o completa el MFA.');
+    const error = new Error('Riot no confirmÛ la sesiÛn a tiempo. Revisa la contraseÒa o completa el MFA.');
     error.code = 'AUTH_TIMEOUT';
     throw error;
 }
@@ -325,12 +322,12 @@ async function startAccountSwitch(accountId, requestId, targetGame = null) {
         payloadBase.game = targetGame === 'none' ? 'riot' : (targetGame || account.game || 'valorant');
         const settings = normalizeSettings(store.loadSettings(), DEFAULT_SETTINGS);
 
-        emitSwitch({ ...payloadBase, state: 'CheckingRiotClient', message: 'Comprobando Riot Client‚Ä¶' });
+        emitSwitch({ ...payloadBase, state: 'CheckingRiotClient', message: 'Comprobando Riot ClientÖ' });
         const runningGamesList = await getRunningProcessesAsync(GAME_PROCESSES);
         const runningGame = runningGamesList.length > 0 ? runningGamesList[0] : undefined;
         if (runningGame) {
             if (settings.autoCloseRunningGames) {
-                emitSwitch({ ...payloadBase, state: 'CheckingRiotClient', message: `Cerrando ${runningGame} para cambiar de cuenta‚Ä¶` });
+                emitSwitch({ ...payloadBase, state: 'CheckingRiotClient', message: `Cerrando ${runningGame} para cambiar de cuentaÖ` });
                 const closed = await terminateGameProcesses();
                 if (!closed) throw Object.assign(new Error(`No se pudo cerrar el juego (${runningGame}).`), { code: 'GAME_CLOSE_FAILED' });
             } else {
@@ -340,7 +337,7 @@ async function startAccountSwitch(accountId, requestId, targetGame = null) {
 
         const riotPath = resolveValidatedRiotClient();
         const bridgePath = getBridgeExePath();
-        if (!fs.existsSync(bridgePath)) throw Object.assign(new Error('No se encontr√≥ el puente nativo.'), { code: 'BRIDGE_MISSING' });
+        if (!fs.existsSync(bridgePath)) throw Object.assign(new Error('No se encontrÛ el puente nativo.'), { code: 'BRIDGE_MISSING' });
 
         const activeSession = await queryRiotSession();
         const effectiveGame = targetGame === 'none' ? null : (targetGame || (settings.autoLaunchGame ? (account.game || 'valorant') : null));
@@ -349,7 +346,7 @@ async function startAccountSwitch(accountId, requestId, targetGame = null) {
         if (alreadyLoggedIn) {
             if (effectiveGame && GAME_ARGS[effectiveGame]) {
                 const gameLabel = effectiveGame === 'league_of_legends' ? 'League of Legends' : 'VALORANT';
-                emitSwitch({ ...payloadBase, state: 'LaunchingGame', message: `Iniciando ${gameLabel}‚Ä¶` });
+                emitSwitch({ ...payloadBase, state: 'LaunchingGame', message: `Iniciando ${gameLabel}Ö` });
                 const { shell } = require('electron');
                 const uri = effectiveGame === 'league_of_legends' ? 'riotclient://launch/league_of_legends/live' : 'riotclient://launch/valorant/live';
                 await shell.openExternal(uri).catch(() => {});
@@ -361,56 +358,25 @@ async function startAccountSwitch(accountId, requestId, targetGame = null) {
                     await shell.openPath(shortcutPath);
                 }
 
-                // MAGIC FALLBACK: Send Tabs and Enter to click "Play" manually
-                const psScript = `
-Add-Type -TypeDefinition @"
-using System;
-using System.Runtime.InteropServices;
-public class Win32 {
-    [DllImport("user32.dll")]
-    public static extern bool SetForegroundWindow(IntPtr hWnd);
-}
-"@
-$proc = Get-Process -Name "RiotClientUx" -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
-if ($proc) {
-    [Win32]::SetForegroundWindow($proc.MainWindowHandle)
-}
-Add-Type -AssemblyName System.Windows.Forms
-$preDelay = ${settings.autoPlayPreDelayMs ?? 1500}
-  if ($preDelay -gt 0) { Start-Sleep -Milliseconds $preDelay }
-$tabs = ${settings.autoPlayTabs ?? 23}
-if ($tabs -gt 0) {
-    for ($i=0; $i -lt $tabs; $i++) {
-        [System.Windows.Forms.SendKeys]::SendWait("{TAB}")
-        $delay = ${settings.autoPlayTabDelayMs ?? 50}
-        if ($delay -gt 0) { Start-Sleep -Milliseconds $delay }
-    }
-    Start-Sleep -Milliseconds 200
-    [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")
-}
-`;
-                const tempPs1 = require('path').join(require('os').tmpdir(), 'rem_riot_click.ps1');
-                require('fs').writeFileSync(tempPs1, psScript, 'utf8');
-                require('child_process').exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${tempPs1}"`);
             } else {
-                emitSwitch({ ...payloadBase, state: 'StartingRiotClient', message: 'Mostrando Riot Client‚Ä¶' });
+                emitSwitch({ ...payloadBase, state: 'StartingRiotClient', message: 'Mostrando Riot ClientÖ' });
                 await launchDetached(riotPath, ['--open-shortcuts']);
             }
         } else {
             if (activeSession) {
-                emitSwitch({ ...payloadBase, state: 'LoggingOut', message: `Cerrando la sesi√≥n de ${activeSession.riotId}‚Ä¶` });
+                emitSwitch({ ...payloadBase, state: 'LoggingOut', message: `Cerrando la sesiÛn de ${activeSession.riotId}Ö` });
                 const logout = await logoutRiotSession();
                 if (!logout.loggedOut) {
-                    throw Object.assign(new Error('Riot Client no confirm√≥ el cierre de sesi√≥n. Cierra sesi√≥n manualmente y vuelve a intentarlo.'), { code: 'RIOT_LOGOUT_FAILED', uiState: 'ManualActionRequired' });
+                    throw Object.assign(new Error('Riot Client no confirmÛ el cierre de sesiÛn. Cierra sesiÛn manualmente y vuelve a intentarlo.'), { code: 'RIOT_LOGOUT_FAILED', uiState: 'ManualActionRequired' });
                 }
-                emitSwitch({ ...payloadBase, state: 'LogoutConfirmed', message: 'Sesi√≥n anterior cerrada.' });
+                emitSwitch({ ...payloadBase, state: 'LogoutConfirmed', message: 'SesiÛn anterior cerrada.' });
             }
 
             const password = decryptAccountPassword(account);
-            emitSwitch({ ...payloadBase, state: 'ClosingExistingSession', message: 'Cerrando la sesi√≥n anterior‚Ä¶' });
+            emitSwitch({ ...payloadBase, state: 'ClosingExistingSession', message: 'Cerrando la sesiÛn anteriorÖ' });
             if (!(await terminateRiotProcesses())) throw Object.assign(new Error('Riot Client no pudo cerrarse.'), { code: 'RIOT_CLOSE_FAILED' });
 
-            emitSwitch({ ...payloadBase, state: 'StartingRiotClient', message: 'Abriendo Riot Client‚Ä¶' });
+            emitSwitch({ ...payloadBase, state: 'StartingRiotClient', message: 'Abriendo Riot ClientÖ' });
             const initialArgs = (effectiveGame && GAME_ARGS[effectiveGame]) ? GAME_ARGS[effectiveGame] : ['--open-shortcuts'];
             await launchDetached(riotPath, initialArgs);
 
@@ -431,10 +397,10 @@ if ($tabs -gt 0) {
             
             if (effectiveGame && GAME_ARGS[effectiveGame]) {
                 const gameLabel = effectiveGame === 'league_of_legends' ? 'League of Legends' : 'VALORANT';
-                emitSwitch({ ...payloadBase, state: 'LaunchingGame', message: `Iniciando ${gameLabel}‚Ä¶` });
+                emitSwitch({ ...payloadBase, state: 'LaunchingGame', message: `Iniciando ${gameLabel}Ö` });
                 
                 
-                // Intentar los m√©todos oficiales
+                // Intentar los mÈtodos oficiales
                 const { shell } = require('electron');
                 const uri = effectiveGame === 'league_of_legends' ? 'riotclient://launch/league_of_legends/live' : 'riotclient://launch/valorant/live';
                 await shell.openExternal(uri).catch(() => {});
@@ -446,37 +412,6 @@ if ($tabs -gt 0) {
                     await shell.openPath(shortcutPath);
                 }
 
-                // MAGIC FALLBACK: Send Tabs and Enter to click "Play" manually
-                const psScript = `
-Add-Type -TypeDefinition @"
-using System;
-using System.Runtime.InteropServices;
-public class Win32 {
-    [DllImport("user32.dll")]
-    public static extern bool SetForegroundWindow(IntPtr hWnd);
-}
-"@
-$proc = Get-Process -Name "RiotClientUx" -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
-if ($proc) {
-    [Win32]::SetForegroundWindow($proc.MainWindowHandle)
-}
-Add-Type -AssemblyName System.Windows.Forms
-$preDelay = ${settings.autoPlayPreDelayMs ?? 1500}
-  if ($preDelay -gt 0) { Start-Sleep -Milliseconds $preDelay }
-$tabs = ${settings.autoPlayTabs ?? 23}
-if ($tabs -gt 0) {
-    for ($i=0; $i -lt $tabs; $i++) {
-        [System.Windows.Forms.SendKeys]::SendWait("{TAB}")
-        $delay = ${settings.autoPlayTabDelayMs ?? 50}
-        if ($delay -gt 0) { Start-Sleep -Milliseconds $delay }
-    }
-    Start-Sleep -Milliseconds 200
-    [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")
-}
-`;
-                const tempPs1 = require('path').join(require('os').tmpdir(), 'rem_riot_click.ps1');
-                require('fs').writeFileSync(tempPs1, psScript, 'utf8');
-                require('child_process').exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${tempPs1}"`);
             }
         }
 
@@ -494,8 +429,8 @@ if ($tabs -gt 0) {
             accountId: account.id,
             game: activityGame,
             text: effectiveGame
-                ? `Sesi√≥n en ${account.displayName} ¬∑ ${effectiveGame === 'league_of_legends' ? 'LoL' : 'Valorant'}`
-                : `Sesi√≥n en ${account.displayName} ¬∑ Riot Client`,
+                ? `SesiÛn en ${account.displayName} ∑ ${effectiveGame === 'league_of_legends' ? 'LoL' : 'Valorant'}`
+                : `SesiÛn en ${account.displayName} ∑ Riot Client`,
             occurredAt: now,
             success: true
         });
@@ -599,9 +534,9 @@ function updateTrayMenu(sessionInfo = undefined) {
 
     const activeRiotId = currentSession?.riotId || '';
     if (activeRiotId) {
-        tray.setToolTip(`RemSwitcher ¬∑ Sesi√≥n: ${activeRiotId}`);
+        tray.setToolTip(`RemSwitcher ∑ SesiÛn: ${activeRiotId}`);
     } else {
-        tray.setToolTip('RemSwitcher ¬∑ Gestor de cuentas Riot');
+        tray.setToolTip('RemSwitcher ∑ Gestor de cuentas Riot');
     }
 
     const valAccounts = accounts.filter((a) => a.game !== 'league_of_legends');
@@ -609,14 +544,14 @@ function updateTrayMenu(sessionInfo = undefined) {
 
     function createAccountMenuItem(account) {
         const isCurrent = activeRiotId && account.riotId && activeRiotId.toLowerCase() === account.riotId.toLowerCase();
-        const prefix = isCurrent ? '‚óè ' : '';
+        const prefix = isCurrent ? '? ' : '';
         const regionStr = account.region ? ` [${account.region}]` : '';
         const defaultGameLabel = account.game === 'league_of_legends' ? 'LoL' : 'Valorant';
         return {
             label: `${prefix}${account.displayName}${regionStr}`,
             submenu: [
                 {
-                    label: `‚ñ∂ Iniciar (${defaultGameLabel})`,
+                    label: `? Iniciar (${defaultGameLabel})`,
                     enabled: !isBusy,
                     click: () => {
                         if (operationGate.activeRequestId) return;
@@ -628,7 +563,7 @@ function updateTrayMenu(sessionInfo = undefined) {
                 },
                 { type: 'separator' },
                 {
-                    label: 'üéÆ Jugar Valorant',
+                    label: '?? Jugar Valorant',
                     enabled: !isBusy,
                     click: () => {
                         if (operationGate.activeRequestId) return;
@@ -639,7 +574,7 @@ function updateTrayMenu(sessionInfo = undefined) {
                     }
                 },
                 {
-                    label: '‚öîÔ∏è Jugar League of Legends',
+                    label: '?? Jugar League of Legends',
                     enabled: !isBusy,
                     click: () => {
                         if (operationGate.activeRequestId) return;
@@ -650,7 +585,7 @@ function updateTrayMenu(sessionInfo = undefined) {
                     }
                 },
                 {
-                    label: 'üîë Solo abrir Riot Client',
+                    label: '?? Solo abrir Riot Client',
                     enabled: !isBusy,
                     click: () => {
                         if (operationGate.activeRequestId) return;
@@ -667,7 +602,7 @@ function updateTrayMenu(sessionInfo = undefined) {
     const menuTemplate = [
         { label: `RemSwitcher v${app.getVersion()}`, enabled: false },
         {
-            label: activeRiotId ? `‚óè Riot: ${activeRiotId}` : '‚óã Riot: Sin sesi√≥n',
+            label: activeRiotId ? `? Riot: ${activeRiotId}` : '? Riot: Sin sesiÛn',
             enabled: false
         },
         { type: 'separator' },
@@ -704,14 +639,14 @@ function updateTrayMenu(sessionInfo = undefined) {
 
     menuTemplate.push(
         {
-            label: 'Cerrar sesi√≥n de Riot Client',
+            label: 'Cerrar sesiÛn de Riot Client',
             enabled: !isBusy,
             click: async () => {
                 try {
                     await logoutRiotSession();
                     updateTrayMenu();
                 } catch (error) {
-                    log('WARN', `Error al cerrar sesi√≥n desde tray: ${error.message}`);
+                    log('WARN', `Error al cerrar sesiÛn desde tray: ${error.message}`);
                 }
             }
         },
@@ -746,7 +681,7 @@ function setupTray() {
     const iconPath = path.join(__dirname, 'build', 'icon.png');
     const fallback = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAE0lEQVR42mP8z8AARA0gFAAD/gAAVh8B9mH+m0cAAAAASUVORK5CYII=');
     tray = new Tray(fs.existsSync(iconPath) ? nativeImage.createFromPath(iconPath) : fallback);
-    tray.setToolTip('RemSwitcher ¬∑ Gestor de cuentas Riot');
+    tray.setToolTip('RemSwitcher ∑ Gestor de cuentas Riot');
     tray.on('click', () => showMainWindow());
     tray.on('double-click', () => showMainWindow());
     updateTrayMenu();
@@ -768,17 +703,17 @@ function setupAutoUpdater() {
     });
 
     autoUpdater.on('update-available', (info) => {
-        log('INFO', `AutoUpdater: Actualizaci√≥n disponible v${info?.version || ''}`);
+        log('INFO', `AutoUpdater: ActualizaciÛn disponible v${info?.version || ''}`);
         emitUpdateStatus({
             status: 'available',
             version: info?.version,
-            message: `Descargando actualizaci√≥n v${info?.version || ''}...`
+            message: `Descargando actualizaciÛn v${info?.version || ''}...`
         });
     });
 
     autoUpdater.on('update-not-available', () => {
-        log('INFO', 'AutoUpdater: La aplicaci√≥n est√° al d√≠a.');
-        emitUpdateStatus({ status: 'not-available', message: 'Tienes la versi√≥n m√°s reciente.' });
+        log('INFO', 'AutoUpdater: La aplicaciÛn est· al dÌa.');
+        emitUpdateStatus({ status: 'not-available', message: 'Tienes la versiÛn m·s reciente.' });
     });
 
     autoUpdater.on('error', (err) => {
@@ -791,7 +726,7 @@ function setupAutoUpdater() {
         emitUpdateStatus({
             status: 'downloading',
             percent,
-            message: `Descargando actualizaci√≥n: ${percent}%`
+            message: `Descargando actualizaciÛn: ${percent}%`
         });
     });
 
@@ -800,7 +735,7 @@ function setupAutoUpdater() {
         emitUpdateStatus({
             status: 'downloaded',
             version: info?.version,
-            message: `Versi√≥n v${info?.version || ''} descargada y lista para instalar.`
+            message: `VersiÛn v${info?.version || ''} descargada y lista para instalar.`
         });
     });
 }
@@ -895,7 +830,7 @@ function registerIpc() {
         const input = normalizeAccountInput(rawInput);
         const accounts = store.loadAccounts();
         const index = input.id ? accounts.findIndex((item) => item.id === input.id) : -1;
-        if (index < 0 && !input.password) throw new Error('Introduce una contrase√±a para la nueva cuenta.');
+        if (index < 0 && !input.password) throw new Error('Introduce una contraseÒa para la nueva cuenta.');
         const existing = index >= 0 ? accounts[index] : null;
         const account = {
             ...(existing || {}),
@@ -1018,7 +953,7 @@ function registerIpc() {
     });
     handle('start-play', ({ accountId, targetGame } = {}) => {
         const id = String(accountId || '');
-        if (!id) throw new Error('Cuenta no v√°lida.');
+        if (!id) throw new Error('Cuenta no v·lida.');
         const requestId = crypto.randomUUID();
         const admission = operationGate.begin(requestId);
         if (!admission.accepted) return admission;
@@ -1069,7 +1004,7 @@ function registerIpc() {
     handle('get-app-version', () => app.getVersion());
     handle('check-for-updates', async () => {
         if (!app.isPackaged) {
-            return { status: 'dev-mode', message: 'Las actualizaciones autom√°ticas solo funcionan en la versi√≥n empaquetada.' };
+            return { status: 'dev-mode', message: 'Las actualizaciones autom·ticas solo funcionan en la versiÛn empaquetada.' };
         }
         try {
             const result = await autoUpdater.checkForUpdates();
@@ -1135,6 +1070,9 @@ app.on('window-all-closed', () => {
         }
     }
 });
+
+
+
 
 
 
