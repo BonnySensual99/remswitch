@@ -1845,3 +1845,42 @@ body[data-style="light"] .color-swatch {
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 0.4rem;
 }
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px;
+    min-width: 220px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    z-index: 1000;
+}
+.dropdown-menu.hidden { display: none; }
+.dropdown-header { font-size: 11px; text-transform: uppercase; color: var(--text-muted); padding: 4px 8px; margin-bottom: 4px; }
+.dropdown-item { display: flex; align-items: center; width: 100%; padding: 8px; background: transparent; border: none; color: var(--text-color); font-size: 13px; border-radius: 4px; cursor: pointer; text-align: left; }
+.dropdown-item:hover { background: rgba(255,255,255,0.05); }
+.dropdown-divider { height: 1px; background: var(--border-color); margin: 6px 0; }
+.dropdown-list { max-height: 200px; overflow-y: auto; }
+
+.profiles-manager-modal { width: min(480px, 94vw); }
+.profiles-manager-body { display: flex; flex-direction: column; gap: 12px; margin: 10px 0; }
+.create-profile-bar { display: flex; gap: 8px; }
+.create-profile-bar input { flex: 1 1 auto; font-size: 13px; }
+.profiles-manager-list { display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; padding-right: 4px; }
+.profiles-manager-item { display: flex; align-items: center; justify-content: space-between; border-radius: 8px; background: rgba(255,255,255,.03); padding: 8px 12px; }
+.profiles-manager-item.is-active { border-color: rgba(var(--accent-rgb), .6); background: rgba(var(--accent-rgb), .1); border-left: 3px solid var(--accent-color); }
+.profiles-manager-info { display: flex; flex-direction: column; min-width: 0; }
+.profiles-manager-info strong { font-size: 13px; font-weight: 700; }
+.profiles-manager-info small { color: var(--text-muted); font-size: 11px; margin-top: 2px; }
+.profiles-manager-actions { display: flex; align-items: center; gap: 6px; }
+
+.custom-avatar-field { margin-top: 10px; }
+.custom-avatar-uploader { display: flex; gap: 12px; align-items: center; margin-top: 6px; }
+.avatar-preview-box { width: 48px; height: 48px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px dashed var(--border-color); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+.avatar-preview-box img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-preview-box span { font-size: 10px; color: var(--text-muted); text-align: center; }
+.avatar-uploader-actions { display: flex; flex-direction: column; gap: 6px; }
