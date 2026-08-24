@@ -744,7 +744,7 @@ svg { width: 18px; height: 18px; fill: currentColor; }
 .empty-import { min-height: 34px; font-size: 11px; }
 .empty-clear { min-height: 34px; margin-top: 14px; font-size: 11px; }
 .sidebar { min-height: 0; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
-.sidebar-card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow); padding: 14px; }
+.sidebar-card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(16px); box-shadow: var(--shadow); padding: 14px; }
 .online-pill { color: var(--success); font-size: 8px; font-weight: 900; letter-spacing: .13em; }
 .stats-grid { margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(3, 1fr); }
 .stats-grid div { text-align: center; border-right: 1px solid var(--line); }
@@ -1336,7 +1336,7 @@ body.view-switching .accounts-scroll { animation: viewFade .36s cubic-bezier(.2,
     .app-shell { padding-left: 16px; padding-right: 16px; }
 }
 
-@media (max-width: 860px) {
+@media (max-width: 768px) {
     .titlebar { grid-template-columns: auto 1fr auto; }
     .nav-tabs { justify-self: center; }
     .brand-block span, .theme-picker { display: none; }
@@ -1824,7 +1824,7 @@ body[data-style="light"] .color-swatch {
     color: var(--text-color);
 }
 .settings-tab-btn.active {
-    background: var(--panel);
+    background: var(--bg); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(16px);
     color: var(--accent-color);
     border-left: 3px solid var(--accent-color);
 }
@@ -1853,7 +1853,7 @@ body[data-style="light"] .color-swatch {
     top: 100%;
     right: 0;
     margin-top: 8px;
-    background: var(--panel);
+    background: var(--bg); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(16px);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 8px;
@@ -1892,3 +1892,5 @@ body[data-style="light"] .color-swatch {
 .settings-tab-btn:hover svg { opacity: 1; }
 .settings-tab-btn.active svg { opacity: 1; color: var(--accent); }
 .settings-tab-btn { display: flex; align-items: center; gap: 8px; }
+
+
