@@ -851,7 +851,7 @@ async function saveAccount(event) {
     try {
         accounts = await rendererApi.saveAccount({
             id: $('accId').value || undefined,
-            profileId: $('accProfile').value || activeProfileId || 'default',
+            profileId: $$('accProfile')?.value || activeProfileId || 'default',
             displayName: $('accDisplayName').value,
             game: $('accGame').value,
             region: $('accRegion').value,
@@ -1238,17 +1238,17 @@ function bindEvents() {
         dropdown.classList.toggle('hidden');
         $('userPill').classList.toggle('active', !dropdown.classList.contains('hidden'));
     });
-    $('btnManageProfiles').addEventListener('click', (event) => {
+    $$('btnManageProfiles')?.addEventListener('click', (event) => {
         event.stopPropagation();
         openProfilesManager();
     });
-    $('btnQuickCreateProfile').addEventListener('click', (event) => {
+    $$('btnQuickCreateProfile')?.addEventListener('click', (event) => {
         event.stopPropagation();
         openQuickCreateProfile();
     });
-    $('btnCloseProfilesModal').addEventListener('click', () => hideModal(elements.profilesModal));
-    $('btnCloseProfilesManager').addEventListener('click', () => hideModal(elements.profilesModal));
-    $('createProfileForm').addEventListener('submit', createProfileFromBar);
+    $$('btnCloseProfilesModal')?.addEventListener('click', () => hideModal(elements.profilesModal));
+    $$('btnCloseProfilesManager')?.addEventListener('click', () => hideModal(elements.profilesModal));
+    $$('createProfileForm')?.addEventListener('submit', createProfileFromBar);
 
     $('btnCloseAccountModal').addEventListener('click', () => hideModal(elements.accountModal));
     $('btnCancelAccount').addEventListener('click', () => hideModal(elements.accountModal));
