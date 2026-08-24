@@ -128,6 +128,22 @@
                     <div class="form-group"><label for="accRank">Rango competitivo</label><select id="accRank"></select></div>
                     <div class="form-group"><label for="accLevel">Nivel</label><input type="number" id="accLevel" min="1" max="9999" placeholder="Nivel actual"></div>
                     <div class="form-group"><label for="accAvatar">Icono del perfil</label><select id="accAvatar"></select></div>
+                    <div class="form-group full custom-avatar-field">
+                        <label>Avatar personalizado (opcional)</label>
+                        <div class="custom-avatar-uploader">
+                            <div class="avatar-preview-box" id="avatarPreviewBox">
+                                <img id="avatarPreviewImg" src="" alt="Vista previa" class="hidden">
+                                <span id="avatarPreviewFallback">Por defecto</span>
+                            </div>
+                            <div class="avatar-uploader-actions">
+                                <input type="file" id="inputCustomAvatar" accept="image/png, image/jpeg, image/webp, image/svg+xml, image/gif" class="hidden">
+                                <button type="button" class="btn secondary small" id="btnUploadAvatar">📁 Subir imagen propia</button>
+                                <button type="button" class="btn secondary small danger hidden" id="btnRemoveCustomAvatar">Usar personaje por defecto</button>
+                                <small class="form-hint">PNG, JPG, WEBP o SVG (se adapta automáticamente).</small>
+                            </div>
+                        </div>
+                        <input type="hidden" id="accCustomAvatar" value="">
+                    </div>
                     <div class="form-group full"><label for="accNotes">Notas privadas</label><textarea id="accNotes" rows="2" placeholder="Notas sobre la cuenta…"></textarea></div>
                 </div>
                 <footer class="modal-footer"><button class="btn secondary" id="btnCancelAccount" type="button">Cancelar</button><button class="btn primary" type="submit">Guardar cuenta</button></footer>
@@ -254,6 +270,24 @@
                     <button class="btn primary" type="submit">Guardar ajustes</button>
                 </footer>
             </form>
+        </section>
+    </div>
+
+    <div class="modal-overlay" id="profilesModal" aria-hidden="true">
+        <section class="modal-card profiles-manager-modal" role="dialog" aria-modal="true" aria-labelledby="profilesManagerTitle">
+            <header class="modal-header">
+                <div><span class="eyebrow">WORKSPACE MANAGEMENT</span><h2 id="profilesManagerTitle">Gestor de perfiles</h2></div>
+                <button class="modal-close" id="btnCloseProfilesModal" type="button" aria-label="Cerrar">×</button>
+            </header>
+            
+            <div class="profiles-manager-body">
+                <div id="profilesManagerList" class="profiles-manager-list"></div>
+                
+                <form id="createProfileForm" class="create-profile-bar" style="margin-top: 10px;">
+                    <input type="text" id="inputNewProfileName" placeholder="Nuevo perfil..." maxlength="40" required autocomplete="off">
+                    <button type="submit" class="btn primary small">Añadir</button>
+                </form>
+            </div>
         </section>
     </div>
 
