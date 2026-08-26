@@ -1,4 +1,4 @@
-?<!DOCTYPE html>
+﻿﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -16,7 +16,7 @@
             <div><strong>REMSWITCHER</strong><span>LOCAL ACCOUNT OPS</span></div>
         </div>
 
-        <nav class="nav-tabs" id="navTabs" aria-label="Navegaci�n principal">
+        <nav class="nav-tabs" id="navTabs" aria-label="Navegación principal">
             <button class="nav-tab active" data-tab="accounts" aria-current="page" type="button">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0H5Z"/></svg>
                 Mis Cuentas
@@ -24,7 +24,7 @@
             <button class="nav-tab" data-tab="settings" type="button">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m19.4 13 .1-1-.1-1 2-1.5-2-3.4-2.4 1a8 8 0 0 0-1.8-1L15 3.5h-4l-.3 2.6a8 8 0 0 0-1.8 1l-2.4-1-2 3.4 2 1.5-.1 1 .1 1-2 1.5 2 3.4 2.4-1a8 8 0 0 0 1.8 1l.3 2.6h4l.3-2.6a8 8 0 0 0 1.8-1l2.4 1 2-3.4-2-1.5ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/></svg>
                 Ajustes
-                <span class="update-badge hidden" id="settingsUpdateBadge">?</span>
+                <span class="update-badge hidden" id="settingsUpdateBadge">●</span>
             </button>
         </nav>
 
@@ -41,7 +41,7 @@
                     <div class="dropdown-list" id="profileList"></div>
                     <div class="dropdown-divider"></div>
                     <button class="dropdown-item" id="btnQuickCreateProfile" role="menuitem">
-                        <svg viewBox="0 0 24 24" width="16" height="16" style="fill: currentColor; margin-right: 8px;"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Nuevo perfil r�pido
+                        <svg viewBox="0 0 24 24" width="16" height="16" style="fill: currentColor; margin-right: 8px;"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Nuevo perfil rápido
                     </button>
                     <button class="dropdown-item" id="btnManageProfiles" role="menuitem">
                         <svg viewBox="0 0 24 24" width="16" height="16" style="fill: currentColor; margin-right: 8px;"><path d="M19.4 13l.1-1-.1-1 2-1.5-2-3.4-2.4 1a8 8 0 0 0-1.8-1L15 3.5h-4l-.3 2.6a8 8 0 0 0-1.8 1l-2.4-1-2 3.4 2 1.5-.1 1 .1 1-2 1.5 2 3.4 2.4-1a8 8 0 0 0 1.8 1l.3 2.6h4l.3-2.6a8 8 0 0 0 1.8-1l2.4 1 2-3.4-2-1.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg> Gestionar perfiles
@@ -50,8 +50,8 @@
             </div>
 
             <div class="window-controls">
-                <button id="btnMinimize" type="button" aria-label="Minimizar">�</button>
-                <button id="btnClose" class="danger" type="button" aria-label="Cerrar">�</button>
+                <button id="btnMinimize" type="button" aria-label="Minimizar">—</button>
+                <button id="btnClose" class="danger" type="button" aria-label="Cerrar">×</button>
             </div>
         </div>
     </header>
@@ -62,13 +62,13 @@
                 <div class="update-banner-content">
                     <span class="update-pulse"></span>
                     <div class="update-banner-text">
-                        <strong id="updateBannerTitle">Actualizaci�n disponible</strong>
-                        <span id="updateBannerMessage">Hay una nueva versi�n lista para instalar.</span>
+                        <strong id="updateBannerTitle">Actualización disponible</strong>
+                        <span id="updateBannerMessage">Hay una nueva versión lista para instalar.</span>
                     </div>
                 </div>
                 <div class="update-banner-actions">
                     <button class="btn primary small" id="btnBannerUpdate" type="button">Instalar ahora</button>
-                    <button class="modal-close banner-close" id="btnDismissBanner" type="button" aria-label="Cerrar aviso">�</button>
+                    <button class="modal-close banner-close" id="btnDismissBanner" type="button" aria-label="Cerrar aviso">×</button>
                 </div>
             </aside>
 
@@ -103,7 +103,7 @@
                 <div class="command-actions">
                     <label class="search-box" for="searchInput">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20 18.6-4.2-4.2a7 7 0 1 0-1.4 1.4l4.2 4.2 1.4-1.4ZM5 10a5 5 0 1 1 10 0 5 5 0 0 1-10 0Z"/></svg>
-                        <input id="searchInput" type="search" aria-label="Buscar cuentas" placeholder="Buscar cuenta�" autocomplete="off">
+                        <input id="searchInput" type="search" aria-label="Buscar cuentas" placeholder="Buscar cuenta…" autocomplete="off">
                         <kbd class="search-kbd-hint">Ctrl F</kbd>
                     </label>
                 </div>
@@ -120,14 +120,14 @@
         <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
             <header class="modal-header">
                 <div><span class="eyebrow" id="modalEyebrow">CREDENCIALES CIFRADAS</span><h2 id="modalTitle">Registrar cuenta</h2></div>
-                <button class="modal-close" id="btnCloseAccountModal" type="button" aria-label="Cerrar">�</button>
+                <button class="modal-close" id="btnCloseAccountModal" type="button" aria-label="Cerrar">×</button>
             </header>
             <div class="autofill-banner" id="autofillBanner">
                 <div class="autofill-info">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 5.6L5 7l1.4-2.5L5 2l2.5 1.4L10 2 8.6 4.5 10 7 7.5 5.6zm12 9.8L17 14l1.4 2.5L17 19l2.5-1.4L22 19l-1.4-2.5L22 14l-2.5 1.4zM22 2l-2.5 1.4L17 2l1.4 2.5L17 7l2.5-1.4L22 7l-1.4-2.5L22 2zm-7.63 5.29c-.39-.39-1.02-.39-1.41 0L1.29 18.96c-.39.39-.39 1.02 0 1.41l2.34 2.34c.39.39 1.02.39 1.41 0L16.7 11.05c.39-.39.39-1.02 0-1.41l-2.33-2.35zm-1.03 5.49l-2.12-2.12 2.44-2.44 2.12 2.12-2.44 2.44z"/></svg>
                     <div>
-                        <strong>�Tienes Riot Client abierto?</strong>
-                        <small>Autocompleta Riot ID, regi�n, rango y nivel en 1 clic.</small>
+                        <strong>¿Tienes Riot Client abierto?</strong>
+                        <small>Autocompleta Riot ID, región, rango y nivel en 1 clic.</small>
                     </div>
                 </div>
                 <button class="btn secondary small" id="btnAutofillSession" type="button">Autocompletar datos</button>
@@ -138,9 +138,9 @@
                 <div class="form-grid">
                     <div class="form-group"><label for="accDisplayName">Nombre mostrado *</label><input type="text" id="accDisplayName" required placeholder="Mi Smurf EUW"></div>
                     <div class="form-group"><label for="accGame">Juego principal *</label><select id="accGame"><option value="valorant">VALORANT</option><option value="league_of_legends">League of Legends</option></select></div>
-                    <div class="form-group"><label for="accRegion">Regi�n *</label><select id="accRegion"><option value="EU">EU</option><option value="NA">NA</option><option value="LATAM">LATAM</option><option value="KR">KR</option><option value="AP">AP</option><option value="BR">BR</option></select></div>
+                    <div class="form-group"><label for="accRegion">Región *</label><select id="accRegion"><option value="EU">EU</option><option value="NA">NA</option><option value="LATAM">LATAM</option><option value="KR">KR</option><option value="AP">AP</option><option value="BR">BR</option></select></div>
                     <div class="form-group"><label for="accUsername">Usuario de Riot *</label><input type="text" id="accUsername" required autocomplete="off" placeholder="Usuario privado"></div>
-                    <div class="form-group"><label for="accPassword" id="accPasswordLabel">Contrase�a *</label><div class="password-wrap"><input type="password" id="accPassword" required autocomplete="new-password" placeholder="��������"><button id="btnTogglePass" type="button" aria-label="Mostrar contraseña"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c5.5 0 9.5 5.3 9.5 7s-4 7-9.5 7S2.5 13.7 2.5 12 6.5 5 12 5Zm0 2c-3.8 0-6.8 3.3-7.4 5 .6 1.7 3.6 5 7.4 5s6.8-3.3 7.4-5c-.6-1.7-3.6-5-7.4-5Zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z"/></svg>?</button></div><small class="form-hint" id="accPasswordHint">Se cifra con DPAPI en este equipo.</small></div>
+                    <div class="form-group"><label for="accPassword" id="accPasswordLabel">Contraseña *</label><div class="password-wrap"><input type="password" id="accPassword" required autocomplete="new-password" placeholder="••••••••"><button id="btnTogglePass" type="button" aria-label="Mostrar contraseña"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c5.5 0 9.5 5.3 9.5 7s-4 7-9.5 7S2.5 13.7 2.5 12 6.5 5 12 5Zm0 2c-3.8 0-6.8 3.3-7.4 5 .6 1.7 3.6 5 7.4 5s6.8-3.3 7.4-5c-.6-1.7-3.6-5-7.4-5Zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z"/></svg></button></div><small class="form-hint" id="accPasswordHint">Se cifra con DPAPI en este equipo.</small></div>
                     <div class="form-group"><label for="accRiotId">Riot ID</label><input type="text" id="accRiotId" placeholder="Nombre#TAG"></div>
                     <div class="form-group"><label for="accRank">Rango competitivo</label><select id="accRank"></select></div>
                     <div class="form-group"><label for="accLevel">Nivel</label><input type="number" id="accLevel" min="1" max="9999" placeholder="Nivel actual"></div>
@@ -157,13 +157,13 @@
                                 <input type="file" id="inputCustomAvatar" accept="image/png, image/jpeg, image/webp, image/svg+xml, image/gif" class="hidden">
                                 <button type="button" class="btn secondary small" id="btnUploadAvatar"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="margin-right: 6px;"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Subir imagen propia</button>
                                 <button type="button" class="btn secondary small danger hidden" id="btnRemoveCustomAvatar">Usar personaje por defecto</button>
-                                <small class="form-hint">PNG, JPG, WEBP o SVG (se adapta autom?ticamente).</small>
+                                <small class="form-hint">PNG, JPG, WEBP o SVG (se adapta automáticamente).</small>
                             </div>
                         </div>
                         <input type="hidden" id="accCustomAvatar" value="">
                     </div>
 
-                    <div class="form-group full"><label for="accNotes">Notas privadas</label><textarea id="accNotes" rows="2" placeholder="Notas sobre la cuenta�"></textarea></div>
+                    <div class="form-group full"><label for="accNotes">Notas privadas</label><textarea id="accNotes" rows="2" placeholder="Notas sobre la cuenta…"></textarea></div>
                 </div>
                 <footer class="modal-footer"><button class="btn secondary" id="btnCancelAccount" type="button">Cancelar</button><button class="btn primary" type="submit">Guardar cuenta</button></footer>
             </form>
@@ -174,13 +174,13 @@
         <section class="modal-card settings-modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
             <header class="modal-header">
                 <div><span class="eyebrow">SYSTEM CONFIG</span><h2 id="settingsTitle">Ajustes</h2></div>
-                <button class="modal-close" id="btnCloseSettingsModal" type="button" aria-label="Cerrar">�</button>
+                <button class="modal-close" id="btnCloseSettingsModal" type="button" aria-label="Cerrar">×</button>
             </header>
             
             <form id="settingsForm">
                 <div class="settings-layout">
                     <!-- Sidebar Tabs -->
-                    <nav class="settings-sidebar" aria-label="Pesta�as de ajustes">
+                    <nav class="settings-sidebar" aria-label="Pestañas de ajustes">
                         <button type="button" class="settings-tab-btn active" data-tab="tab-general"><svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg> General & Interfaz</button>
                         <button type="button" class="settings-tab-btn" data-tab="tab-experiencia"><svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16" fill="currentColor"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm3-3c-.83 0-1.5-.67-1.5-1.5S17.67 9 18.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg> Juego y Sesiones</button>
                         <button type="button" class="settings-tab-btn" data-tab="tab-atajos"><svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16" fill="currentColor"><path d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/></svg> Atajos</button>
@@ -190,11 +190,11 @@
 
                     <!-- Tab Contents -->
                     <div class="settings-content">
-                        <!-- Pesta�a: General -->
+                        <!-- Pestaña: General -->
                         <div class="settings-panel active" id="tab-general">
                             <h3>Inicio y ventana</h3>
-                            <label class="switch-row"><span><strong>Iniciar con Windows</strong><small>Abre RemSwitcher al iniciar sesi�n</small></span><input type="checkbox" id="setStartWithWindows"></label>
-                            <label class="switch-row"><span><strong>Minimizar a bandeja</strong><small>El bot�n cerrar mantendr� la app disponible</small></span><input type="checkbox" id="setMinimizeToTray"></label>
+                            <label class="switch-row"><span><strong>Iniciar con Windows</strong><small>Abre RemSwitcher al iniciar sesión</small></span><input type="checkbox" id="setStartWithWindows"></label>
+                            <label class="switch-row"><span><strong>Minimizar a bandeja</strong><small>El botón cerrar mantendrá la app disponible</small></span><input type="checkbox" id="setMinimizeToTray"></label>
                             <label class="switch-row"><span><strong>Cerrar tras lanzar</strong><small>Finaliza RemSwitcher al abrir el juego</small></span><input type="checkbox" id="setCloseOnLaunch"></label>
                             
                                                                                 
@@ -203,19 +203,19 @@
                             <label class="switch-row"><span><strong>Efectos de sonido</strong><small>Notificaciones y clics de la interfaz</small></span><input type="checkbox" id="setSoundEnabled"></label>
                         </div>
 
-                        <!-- Pesta�a: Experiencia -->
+                        <!-- Pestaña: Experiencia -->
                         <div class="settings-panel" id="tab-experiencia">
                             <h3>Comportamiento</h3>
-                            <label class="switch-row"><span><strong>Abrir juego autom�ticamente</strong><small>Inicia el juego elegido al confirmar la sesi�n</small></span><input type="checkbox" id="setAutoLaunchGame"></label>
-                            <label class="switch-row"><span><strong>Cerrar juego al cambiar</strong><small>Cierra Valorant o LoL autom�ticamente para no bloquear el cambio</small></span><input type="checkbox" id="setAutoCloseRunningGames"></label>
+                            <label class="switch-row"><span><strong>Abrir juego automáticamente</strong><small>Inicia el juego elegido al confirmar la sesión</small></span><input type="checkbox" id="setAutoLaunchGame"></label>
+                            <label class="switch-row"><span><strong>Cerrar juego al cambiar</strong><small>Cierra Valorant o LoL automáticamente para no bloquear el cambio</small></span><input type="checkbox" id="setAutoCloseRunningGames"></label>
                             <label class="switch-row"><span><strong>Auto-sincronizar rango y nivel</strong><small>Detecta tu rango y nivel real mientras juegas</small></span><input type="checkbox" id="setAutoSyncRank"></label>
                             
                                                                                                             
-                            <h3 style="margin-top:20px;">Seguridad de sesi�n</h3>
-                            <label class="switch-row"><span><strong>Pedir confirmaci�n de cambio</strong><small>Mostrar aviso antes de cerrar el cliente actual</small></span><input type="checkbox" id="setConfirmSwitch"></label>
+                            <h3 style="margin-top:20px;">Seguridad de sesión</h3>
+                            <label class="switch-row"><span><strong>Pedir confirmación de cambio</strong><small>Mostrar aviso antes de cerrar el cliente actual</small></span><input type="checkbox" id="setConfirmSwitch"></label>
                         </div>
 
-                        <!-- Pesta�a: Atajos -->
+                        <!-- Pestaña: Atajos -->
                         <div class="settings-panel" id="tab-atajos">
                             <div class="shortcut-list">
                                 <div class="shortcut-item">
@@ -229,14 +229,14 @@
                                 </div>
                                 <div class="shortcut-item static">
                                     <div class="shortcut-desc">
-                                        <strong>B�squeda r�pida</strong>
+                                        <strong>Búsqueda rápida</strong>
                                         <small>Enfoca el buscador de cuentas</small>
                                     </div>
                                     <div class="shortcut-keys"><kbd>Ctrl</kbd> + <kbd>F</kbd> <span class="or-sep">/</span> <kbd>/</kbd></div>
                                 </div>
                                 <div class="shortcut-item static">
                                     <div class="shortcut-desc">
-                                        <strong>A�adir nueva cuenta</strong>
+                                        <strong>Añadir nueva cuenta</strong>
                                         <small>Abre el modal de registro</small>
                                     </div>
                                     <div class="shortcut-keys"><kbd>Ctrl</kbd> + <kbd>N</kbd></div>
@@ -244,7 +244,7 @@
                                 <div class="shortcut-item static">
                                     <div class="shortcut-desc">
                                         <strong>Abrir Ajustes</strong>
-                                        <small>Abre este men� de opciones</small>
+                                        <small>Abre este menú de opciones</small>
                                     </div>
                                     <div class="shortcut-keys"><kbd>Ctrl</kbd> + <kbd>,</kbd></div>
                                 </div>
@@ -257,25 +257,25 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- Pesta�a: Avanzado -->
+                        <!-- Pestaña: Avanzado -->
                         <div class="settings-panel" id="tab-avanzado">
-                            <h3>Escritura de credenciales (Inicio de sesi�n)</h3>
+                            <h3>Escritura de credenciales (Inicio de sesión)</h3>
                             <div class="form-grid compact">
                                 <div class="form-group"><label for="setInitialDelay">Espera inicial (ms)</label><input type="number" id="setInitialDelay" min="300" max="10000" step="100"></div>
-                                <div class="form-group"><label for="setCharDelay">Retardo car�cter (ms)</label><input type="number" id="setCharDelay" min="1" max="100" step="1"></div>
+                                <div class="form-group"><label for="setCharDelay">Retardo carácter (ms)</label><input type="number" id="setCharDelay" min="1" max="100" step="1"></div>
                                 <div class="form-group"><label for="setFieldDelay">Retardo campos (ms)</label><input type="number" id="setFieldDelay" min="50" max="1000" step="50"></div>
                             </div>
                             
                             <h3 style="margin-top:20px;">Sistema</h3>
-                            <div class="form-group full"><label for="setCustomRiotPath">Ruta personalizada de RiotClientServices.exe</label><input type="text" id="setCustomRiotPath" placeholder="Detecci�n autom�tica"><div class="test-row"><button class="btn secondary small" id="btnTestRiot" type="button">Comprobar cliente</button><span id="testRiotStatus"></span></div></div>
+                            <div class="form-group full"><label for="setCustomRiotPath">Ruta personalizada de RiotClientServices.exe</label><input type="text" id="setCustomRiotPath" placeholder="Detección automática"><div class="test-row"><button class="btn secondary small" id="btnTestRiot" type="button">Comprobar cliente</button><span id="testRiotStatus"></span></div></div>
                         </div>
 
-                        <!-- Pesta�a: Actualizaciones -->
+                        <!-- Pestaña: Actualizaciones -->
                         <div class="settings-panel" id="tab-actualizaciones">
                             <div class="update-row">
                                 <div>
-                                    <strong>Versi�n actual: <span id="appVersionLabel">1.0.1</span></strong>
-                                    <small id="updateStatusText">Comprobaci�n autom�tica activada</small>
+                                    <strong>Versión actual: <span id="appVersionLabel">1.0.1</span></strong>
+                                    <small id="updateStatusText">Comprobación automática activada</small>
                                 </div>
                                 <div class="update-actions">
                                     <button class="btn secondary small" id="btnCheckUpdates" type="button">Buscar actualizaciones</button>
@@ -299,13 +299,13 @@
         <section class="modal-card profiles-manager-modal" role="dialog" aria-modal="true" aria-labelledby="profilesManagerTitle">
             <header class="modal-header">
                 <div><span class="eyebrow">WORKSPACE MANAGEMENT</span><h2 id="profilesManagerTitle">Gestor de perfiles</h2></div>
-                <button class="modal-close" id="btnCloseProfilesModal" type="button" aria-label="Cerrar">?</button>
+                <button class="modal-close" id="btnCloseProfilesModal" type="button" aria-label="Cerrar">×</button>
             </header>
             <div class="profiles-manager-body">
                 <div id="profilesManagerList" class="profiles-manager-list"></div>
                 <form id="createProfileForm" class="create-profile-bar" style="margin-top: 10px;">
                     <input type="text" id="inputNewProfileName" placeholder="Nuevo perfil..." maxlength="40" required autocomplete="off">
-                    <button type="submit" class="btn primary small">A?adir</button>
+                    <button type="submit" class="btn primary small">Añadir</button>
                 </form>
             </div>
         </section>
@@ -313,7 +313,7 @@
 
     <div class="modal-overlay" id="profileModal" aria-hidden="true">
         <section class="modal-card compact-modal" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
-            <header class="modal-header"><div><span class="eyebrow">LOCAL PROFILE</span><h2 id="profileTitle">Nombre del operador</h2></div><button class="modal-close" id="btnCloseProfileModal" type="button" aria-label="Cerrar">�</button></header>
+            <header class="modal-header"><div><span class="eyebrow">LOCAL PROFILE</span><h2 id="profileTitle">Nombre del operador</h2></div><button class="modal-close" id="btnCloseProfileModal" type="button" aria-label="Cerrar">×</button></header>
             <form id="profileForm"><div class="form-group full"><label for="inputProfileUsername">Nombre mostrado en este equipo</label><input id="inputProfileUsername" type="text" maxlength="40" required autocomplete="off" placeholder="Operador"></div><footer class="modal-footer"><button class="btn primary" type="submit">Guardar perfil</button></footer></form>
         </section>
     </div>
@@ -332,21 +332,21 @@
             <span class="eyebrow" id="switchGame">RIOT SESSION</span>
             <p class="switch-target" id="switchTarget">Cuenta destino</p>
             <div class="switch-context" aria-label="Origen y destino del cambio">
-                <div><small>ACTUAL</small><strong id="switchSource">Sin sesi�n</strong></div>
-                <span class="context-arrow" aria-hidden="true">?</span>
+                <div><small>ACTUAL</small><strong id="switchSource">Sin sesión</strong></div>
+                <span class="context-arrow" aria-hidden="true">→</span>
                 <div><small>DESTINO</small><strong id="switchDestination">Cuenta destino</strong></div>
             </div>
-            <h2 id="switchTitle">Preparando operaci�n</h2>
-            <p id="switchMessage">Comprobando el sistema�</p>
+            <h2 id="switchTitle">Preparando operación</h2>
+            <p id="switchMessage">Comprobando el sistema…</p>
             <div class="progress-track"><span id="switchProgress"></span></div>
             <ol class="switch-steps" id="switchSteps">
-                <li data-state="CheckingRiotClient">Cliente</li><li data-state="LoggingOut">Sesi�n</li><li data-state="StartingRiotClient">Inicio</li><li data-state="Authenticating">Acceso</li><li data-state="WaitingForAuthentication">Verificaci�n</li><li data-state="LaunchingGame">Juego</li>
+                <li data-state="CheckingRiotClient">Cliente</li><li data-state="LoggingOut">Sesión</li><li data-state="StartingRiotClient">Inicio</li><li data-state="Authenticating">Acceso</li><li data-state="WaitingForAuthentication">Verificación</li><li data-state="LaunchingGame">Juego</li>
             </ol>
             <div class="switch-actions">
                 <button class="btn secondary hidden" id="btnForceCloseGame" type="button">Cerrar juego y continuar</button>
                 <button class="btn secondary hidden" id="btnRetrySwitch" type="button">Reintentar</button>
                 <button class="btn secondary hidden" id="btnOpenRiot" type="button">Abrir Riot Client</button>
-                <button class="btn secondary hidden" id="btnManualLogout" type="button">Cerrar sesi�n manualmente</button>
+                <button class="btn secondary hidden" id="btnManualLogout" type="button">Cerrar sesión manualmente</button>
                 <button class="btn secondary hidden" id="btnCloseSwitch" type="button">Cerrar</button>
             </div>
         </section>
@@ -357,7 +357,6 @@
 <script src="app.js"></script>
 </body>
 </html>
-
 
 
 
