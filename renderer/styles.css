@@ -1894,3 +1894,12 @@ body[data-style="light"] .color-swatch {
 .settings-tab-btn { display: flex; align-items: center; gap: 8px; }
 
 
+
+select option { background-color: var(--surface, #1e1e1e); color: var(--text, #fff); }
+body[data-style="light"] select option { background-color: #ffffff; color: #000000; }
+
+.modal-close { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+
+
+.window-controls button { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+
