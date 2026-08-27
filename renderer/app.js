@@ -1274,6 +1274,9 @@ function showSwitchOverlay(game, account = null, launchOffline = false) {
 function closeSwitchOverlay() {
     elements.switchOverlay.classList.remove('active');
     elements.switchOverlay.setAttribute('aria-hidden', 'true');
+    activeRequestId = null;
+    setSwitchControlsDisabled(false);
+    renderRuntime();
     if (switchPreviousFocus instanceof HTMLElement) switchPreviousFocus.focus();
     switchPreviousFocus = null;
 }
@@ -1302,19 +1305,24 @@ function updateSwitchState(payload) {
     if (elements.statusBar) elements.statusBar.className = `status-bar ${['Error', 'WrongPassword', 'Timeout'].includes(state) ? 'error' : 'busy'}`;
     const panel = document.querySelector('.switch-panel');
     panel.classList.remove('waiting');
-    document.querySelectorAll('.switch-steps li').forEach((step, index) => {
+    document.querySelectorAll('.switch-steps li').forEach((step) => {
         const mappedIndex = SWITCH_STAGES.indexOf(step.dataset.state);
         step.classList.toggle('complete', stageIndex > mappedIndex || state === 'Done');
         step.classList.toggle('active', mappedIndex === stageIndex);
     });
 
+    if (state === 'WaitingForAuthentication' || state === 'LoggingOut') {
+        panel.classList.add('waiting');
+        $('btnCancelSwitch').classList.remove('hidden');
+    }
+
     if (TERMINAL_SWITCH_STATES.has(state)) {
         panel.classList.remove('error', 'manual', 'waiting', 'done');
         panel.classList.add(state === 'Done' ? 'done' : ['ManualActionRequired', 'Timeout'].includes(state) ? 'manual' : 'error');
         $('btnCloseSwitch').classList.remove('hidden');
-        } else if (state === 'WaitingForAuthentication') {
-            $('btnCancelSwitch').classList.remove('hidden');
-        if (state === 'WrongPassword' || state === 'Timeout' || state === 'Error') $('btnRetrySwitch').classList.remove('hidden');
+        if (state === 'WrongPassword' || state === 'Timeout' || state === 'Error') {
+            $('btnRetrySwitch').classList.remove('hidden');
+        }
         if (payload.errorCode === 'GAME_RUNNING') {
             $('btnForceCloseGame').classList.remove('hidden');
         }
@@ -1329,8 +1337,6 @@ function updateSwitchState(payload) {
         refreshAfterSwitch();
         playSound(state === 'Done' ? 'success' : 'error');
         if (state === 'Done') setTimeout(closeSwitchOverlay, 1800);
-    } else if (state === 'WaitingForAuthentication' || state === 'LoggingOut') {
-        document.querySelector('.switch-panel').classList.add('waiting');
     }
 }
 
@@ -1607,8 +1613,18 @@ function bindEvents() {
     $('btnCloseProfileModal').addEventListener('click', () => hideModal(elements.profileModal));
     $('btnConfirmCancel').addEventListener('click', () => settleConfirmation(false));
     $('btnConfirmAccept').addEventListener('click', () => settleConfirmation(true));
-    $('btnCloseSwitch').addEventListener('click', closeSwitchOverlay);
-    $('btnCancelSwitch').addEventListener('click', () => { rendererApi.cancelSwitch?.(); closeSwitchOverlay(); });
+    $('btnCloseSwitch').addEventListener('click', () => {
+        closeSwitchOverlay();
+        renderAccounts();
+    });
+    $('btnCancelSwitch').addEventListener('click', async () => {
+        try {
+            await rendererApi.cancelSwitch?.();
+        } catch {}
+        closeSwitchOverlay();
+        showToast('Cambio de cuenta cancelado.');
+        renderAccounts();
+    });
     $('btnRetrySwitch').addEventListener('click', () => {
         if (!lastSwitchAccount) return;
         closeSwitchOverlay();
