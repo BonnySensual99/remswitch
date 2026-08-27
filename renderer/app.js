@@ -1041,14 +1041,14 @@ function renderDisplayProfiles() {
         deleteBtn.setAttribute('aria-label', `Eliminar perfil ${profile.name}`);
         deleteBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
         deleteBtn.addEventListener('click', async () => {
-            const confirmed = await requestConfirmation({
-                title: 'Eliminar resolución',
-                message: `¿Seguro que quieres eliminar el perfil "${profile.name}"?`,
-                acceptText: 'Eliminar'
-            });
+            const confirmed = await confirmAction(
+                'Eliminar resolución',
+                `¿Seguro que quieres eliminar el perfil "${profile.name}"?`,
+                'Eliminar'
+            );
             if (confirmed) {
                 const updated = await rendererApi.deleteDisplayProfile(profile.id || profile.name);
-                displayProfiles = updated;
+                displayProfiles = updated || [];
                 showToast('Perfil de resolución eliminado');
                 renderDisplayProfiles();
             }

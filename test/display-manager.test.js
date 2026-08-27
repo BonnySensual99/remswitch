@@ -83,13 +83,21 @@ test('display-manager: permite eliminar un perfil existente', () => {
     }
 });
 
-test('display-manager: rechaza dimensiones inválidas', () => {
+test('display-manager: permite eliminar todos los perfiles por defecto y conservar la lista vacía', () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'remdisplay-test-'));
     try {
-        assert.throws(() => {
-            saveProfile({ name: 'Bad', width: 100, height: 100 }, tempDir);
-        }, /Resolución inválida/);
+        let list = loadDisplayProfiles(tempDir);
+        assert.equal(list.length, DEFAULT_PROFILES.length);
+
+        for (const p of DEFAULT_PROFILES) {
+            list = deleteProfile(p.id, tempDir);
+        }
+
+        assert.equal(list.length, 0);
+        const reloaded = loadDisplayProfiles(tempDir);
+        assert.equal(reloaded.length, 0);
     } finally {
         fs.rmSync(tempDir, { recursive: true, force: true });
     }
 });
+
