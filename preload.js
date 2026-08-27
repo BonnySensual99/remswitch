@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld('api', Object.freeze({
     cancelSwitch: () => ipcRenderer.invoke('cancel-switch'),
     getDeceiveStatus: () => ipcRenderer.invoke('get-deceive-status'),
     downloadDeceive: () => ipcRenderer.invoke('download-deceive'),
+    stealthSetMode: (mode) => ipcRenderer.invoke('stealth:set-mode', mode),
+    stealthGetStatus: () => ipcRenderer.invoke('stealth:get-status'),
 
     getActivityLog: () => ipcRenderer.invoke('get-activity-log'),
     getUserProfile: () => ipcRenderer.invoke('get-user-profile'),
@@ -67,6 +69,13 @@ contextBridge.exposeInMainWorld('api', Object.freeze({
         const listener = (_event, payload) => callback(payload);
         ipcRenderer.on('switch-state', listener);
         return () => ipcRenderer.removeListener('switch-state', listener);
+    },
+
+    onStealthModeUpdated: (callback) => {
+        if (typeof callback !== 'function') return () => {};
+        const listener = (_event, payload) => callback(payload);
+        ipcRenderer.on('stealth-mode-updated', listener);
+        return () => ipcRenderer.removeListener('stealth-mode-updated', listener);
     },
 
     getDisplayState: () => ipcRenderer.invoke('display:get-state'),

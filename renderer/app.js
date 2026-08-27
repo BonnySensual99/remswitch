@@ -535,6 +535,30 @@ function renderRuntime() {
     const busy = activeRequestId || runtimeStatus?.activeRequestId;
     operation.textContent = busy ? 'En curso' : 'Disponible';
     operation.className = busy ? 'state-warn' : 'state-ok';
+    refreshStealthUI();
+}
+
+async function refreshStealthUI() {
+    if (!rendererApi?.stealthGetStatus) return;
+    try {
+        const status = await rendererApi.stealthGetStatus();
+        const toggleBtn = $('btnLiveStealthToggle');
+        const label = $('liveStealthLabel');
+        if (!toggleBtn || !label) return;
+
+        if (status.active) {
+            toggleBtn.classList.remove('hidden');
+            const isOffline = (status.mode !== 'online');
+            toggleBtn.classList.toggle('active', isOffline);
+            toggleBtn.classList.toggle('online', !isOffline);
+            label.textContent = isOffline ? 'Desconectado' : 'Conectado';
+            toggleBtn.title = isOffline 
+                ? 'Modo Invisible ACTIVO: Apareces desconectado ante amigos. Clic para aparecer conectado.'
+                : 'Modo Invisible DESACTIVADO: Apareces conectado. Clic para aparecer desconectado.';
+        } else {
+            toggleBtn.classList.add('hidden');
+        }
+    } catch {}
 }
 
 const GAME_LOGOS = {
@@ -1704,6 +1728,25 @@ function bindEvents() {
         $('btnTogglePass').setAttribute('aria-label', input.type === 'password' ? 'Mostrar contraseña' : 'Ocultar contraseña');
     });
 
+    $('btnLiveStealthToggle')?.addEventListener('click', async () => {
+        if (!rendererApi?.stealthGetStatus || !rendererApi?.stealthSetMode) return;
+        try {
+            const current = await rendererApi.stealthGetStatus();
+            const nextMode = (current.mode === 'online') ? 'offline' : 'online';
+            await rendererApi.stealthSetMode(nextMode);
+            await refreshStealthUI();
+            if (nextMode === 'offline') {
+                showToast('👻 Modo Invisible activado: Apareces como DESCONECTADO.');
+                playSound('success');
+            } else {
+                showToast('🟢 Modo Visible activado: Apareces como CONECTADO.');
+                playSound('success');
+            }
+        } catch (error) {
+            showToast(error.message || 'Error al alternar modo invisible.', 'error');
+        }
+    });
+
     elements.searchInput.addEventListener('input', renderAccounts);
     elements.gameTabs.addEventListener('click', (event) => {
         const button = event.target.closest('.game-tab');
@@ -1994,6 +2037,9 @@ async function initialize() {
         setSwitchControlsDisabled(Boolean(activeRequestId));
         if (activeRequestId) showSwitchOverlay('valorant', accounts[0] || null);
         rendererApi.onSwitchState(updateSwitchState);
+        if (rendererApi.onStealthModeUpdated) {
+            rendererApi.onStealthModeUpdated(() => refreshStealthUI());
+        }
         setInterval(() => {
             if (isWindowActive && !document.hidden && !activeRequestId) {
                 refreshRuntimeStatus();

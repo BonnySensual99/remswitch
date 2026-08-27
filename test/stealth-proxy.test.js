@@ -38,6 +38,21 @@ test('stealth-proxy: reescribe clientconfig JSON redirigiendo chat hacia localho
     assert.equal(parsed['chat.affinities']['EU'], 'deceive-localhost.molenzwiebel.xyz');
 });
 
+test('stealth-proxy: permite alternar entre modo offline y online dinámicamente', () => {
+    const { setStealthMode, getStealthMode } = require('../lib/stealth-proxy');
+    const rawXml = "<presence to='eu1.pvp.net'><show>chat</show><status>Jugando</status></presence>";
+    
+    setStealthMode('offline');
+    assert.equal(getStealthMode(), 'offline');
+    assert.ok(filterXmppClientTraffic(rawXml).includes('<show>offline</show>'));
+
+    setStealthMode('online');
+    assert.equal(getStealthMode(), 'online');
+    assert.ok(filterXmppClientTraffic(rawXml).includes('<show>chat</show>'));
+
+    setStealthMode('offline');
+});
+
 test('stealth-proxy: inicia y detiene servidores locales HTTP y TLS', async () => {
     const proxy = await startStealthProxy();
     assert.ok(proxy.configPort > 0);

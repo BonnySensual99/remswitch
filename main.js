@@ -17,7 +17,10 @@ const { queryRiotSession, queryLiveRankAndStats, logoutRiotSession } = require('
 const displayManager = require('./lib/display-manager');
 const {
     startStealthProxy,
-    stopStealthProxy
+    stopStealthProxy,
+    setStealthMode,
+    getStealthMode,
+    isStealthActive
 } = require('./lib/stealth-proxy');
 
 const APP_DATA_DIR = path.join(process.env.LOCALAPPDATA || app.getPath('appData'), 'RemSwitcher');
@@ -378,16 +381,16 @@ async function startAccountSwitch(accountId, requestId, targetGame = null, launc
             }
         } else {
             if (activeSession) {
-                emitSwitch({ ...payloadBase, state: 'LoggingOut', message: `Cerrando la sesión de ${activeSession.riotId}...` });
-                const logout = await logoutRiotSession();
-                if (!logout.loggedOut) {
-                    throw Object.assign(new Error('Riot Client no confirmó el cierre de sesión. Cierra sesión manualmente y vuelve a intentarlo.'), { code: 'RIOT_LOGOUT_FAILED', uiState: 'ManualActionRequired' });
-                }
+                emitSwitch({ ...payloadBase, state: 'LoggingOut', message: `Cerrando la sesión anterior (${activeSession.riotId})...` });
+                try {
+                    await logoutRiotSession({ verifyTimeoutMs: 1200 });
+                } catch {}
                 emitSwitch({ ...payloadBase, state: 'LogoutConfirmed', message: 'Sesión anterior cerrada.' });
             }
 
             const password = decryptAccountPassword(account);
-            emitSwitch({ ...payloadBase, state: 'ClosingExistingSession', message: 'Cerrando la sesión anterior...' });
+            emitSwitch({ ...payloadBase, state: 'ClosingExistingSession', message: 'Cerrando cliente y juegos anteriores...' });
+            await terminateGameProcesses();
             if (!(await terminateRiotProcesses())) throw Object.assign(new Error('Riot Client no pudo cerrarse.'), { code: 'RIOT_CLOSE_FAILED' });
 
             if (launchOffline) {
@@ -676,7 +679,38 @@ function updateTrayMenu(sessionInfo = undefined) {
                     log('WARN', `Error al cerrar sesión desde tray: ${error.message}`);
                 }
             }
-        },
+        }
+    );
+
+    if (isStealthActive()) {
+        const mode = getStealthMode();
+        menuTemplate.push(
+            { type: 'separator' },
+            {
+                label: `👻 Modo Invisible: ${mode === 'offline' ? 'Desconectado' : 'Conectado'}`,
+                submenu: [
+                    {
+                        label: `● Desconectado (Invisible) ${mode === 'offline' ? '✓' : ''}`,
+                        click: () => {
+                            setStealthMode('offline');
+                            updateTrayMenu();
+                            if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('stealth-mode-updated', { mode: 'offline', active: true });
+                        }
+                    },
+                    {
+                        label: `● Conectado (Visible) ${mode === 'online' ? '✓' : ''}`,
+                        click: () => {
+                            setStealthMode('online');
+                            updateTrayMenu();
+                            if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('stealth-mode-updated', { mode: 'online', active: true });
+                        }
+                    }
+                ]
+            }
+        );
+    }
+
+    menuTemplate.push(
         { type: 'separator' },
         {
             label: 'Minimizar a la bandeja al cerrar',
@@ -812,6 +846,8 @@ function registerPackagedSmokeIpc() {
     ipcMain.handle('display:save-profile', () => []);
     ipcMain.handle('get-deceive-status', () => ({ installed: true, path: 'C:\\test\\Deceive.exe' }));
     ipcMain.handle('download-deceive', () => ({ ok: true, path: 'C:\\test\\Deceive.exe' }));
+    ipcMain.handle('stealth:set-mode', (_e, mode) => ({ mode: mode || 'offline', active: true }));
+    ipcMain.handle('stealth:get-status', () => ({ active: true, mode: 'offline' }));
 }
 
 async function runPackagedSmoke() {
@@ -1006,6 +1042,18 @@ function registerIpc() {
     });
     handle('get-deceive-status', () => ({ installed: true, path: 'Motor Nativo Integrado (Stealth Proxy)' }));
     handle('download-deceive', async () => ({ ok: true, path: 'Motor Nativo Integrado (Stealth Proxy)' }));
+    handle('stealth:set-mode', (rawMode) => {
+        const mode = setStealthMode(rawMode);
+        updateTrayMenu();
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('stealth-mode-updated', { mode, active: isStealthActive() });
+        }
+        return { mode, active: isStealthActive() };
+    });
+    handle('stealth:get-status', () => ({
+        active: isStealthActive(),
+        mode: getStealthMode()
+    }));
     handle('get-activity-log', () => store.loadActivity());
     handle('get-user-profile', () => store.loadProfile());
     handle('save-user-profile', (rawProfile) => {
