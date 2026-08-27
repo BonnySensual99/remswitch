@@ -39,6 +39,7 @@ const DEFAULT_SETTINGS = Object.freeze({
     confirmSwitch: true,
     soundEnabled: true,
     reducedMotion: false,
+    globalStealth: false,
     initialDelayMs: 1800,
     charDelayMs: 15,
     fieldDelayMs: 200,

@@ -770,10 +770,6 @@ function renderAccounts() {
                 <button class="card-action favorite ${account.isFavorite ? 'active' : ''}" type="button" aria-label="${account.isFavorite ? 'Quitar de favoritas' : 'Marcar favorita'}" title="${account.isFavorite ? 'Quitar de favoritas' : 'Marcar favorita'}">${iconSvg('star')}</button>
                 <button class="card-action edit" type="button" aria-label="Editar cuenta" title="Editar cuenta">${iconSvg('edit')}</button>
                 <button class="card-action delete" type="button" aria-label="Eliminar cuenta" title="Eliminar cuenta">${iconSvg('trash')}</button>
-                <button class="card-action deceive-toggle ${isOffline ? 'active' : ''}" type="button" aria-pressed="${String(isOffline)}" title="${isOffline ? 'Modo Desconectado: ACTIVADO (Deceive)' : 'Modo Desconectado: DESACTIVADO (Deceive)'}" aria-label="Alternar modo desconectado">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12 2a9 9 0 0 0-9 9c0 4.17 2.84 7.67 6.69 8.69L10 21l2-1.5 2 1.5.31-1.31C18.16 18.67 21 15.17 21 11a9 9 0 0 0-9-9zm-3.5 8a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm7 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>
-                    ${isOffline ? '<span class="deceive-dot" aria-hidden="true"></span>' : ''}
-                </button>
                 <div class="play-group">
                     <button class="play-btn ${isOffline ? 'deceive-mode' : ''}" type="button">
                         ${getGameLogoSvg(defaultGame)} <span class="play-btn-text">${escapeHtml(defaultPlayLabel)}</span>
@@ -791,43 +787,8 @@ function renderAccounts() {
         card.querySelector('.favorite').addEventListener('click', () => toggleFavorite(account));
         card.querySelector('.edit').addEventListener('click', () => openAccountModal(account));
         card.querySelector('.delete').addEventListener('click', () => deleteAccount(account));
-        
-        const deceiveBtn = card.querySelector('.deceive-toggle');
-        deceiveBtn.addEventListener('click', (event) => {
-            event.stopPropagation();
-            const nextOffline = !Boolean(accountDeceiveState[account.id]);
-            accountDeceiveState[account.id] = nextOffline;
-            
-            deceiveBtn.classList.toggle('active', nextOffline);
-            deceiveBtn.setAttribute('aria-pressed', String(nextOffline));
-            deceiveBtn.title = nextOffline ? 'Modo Desconectado: ACTIVADO' : 'Modo Desconectado: DESACTIVADO';
-            deceiveBtn.innerHTML = `
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12 2a9 9 0 0 0-9 9c0 4.17 2.84 7.67 6.69 8.69L10 21l2-1.5 2 1.5.31-1.31C18.16 18.67 21 15.17 21 11a9 9 0 0 0-9-9zm-3.5 8a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm7 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>
-                ${nextOffline ? '<span class="deceive-dot" aria-hidden="true"></span>' : ''}
-            `;
-            
-            const pBtn = card.querySelector('.play-btn');
-            const pDrop = card.querySelector('.play-btn-drop');
-            const pMenu = card.querySelector('.play-menu');
-            const pText = card.querySelector('.play-btn-text');
-            const optValT = card.querySelector('.opt-val-text');
-            const optLolT = card.querySelector('.opt-lol-text');
-            const optRiotT = card.querySelector('.opt-riot-text');
-            
-            pBtn.classList.toggle('deceive-mode', nextOffline);
-            pDrop.classList.toggle('deceive-mode', nextOffline);
-            pMenu.classList.toggle('deceive-mode', nextOffline);
-            
-            const curBaseLabel = account.game === 'league_of_legends' ? 'Jugar LoL' : 'Jugar Valorant';
-            if (pText) pText.textContent = nextOffline ? `${curBaseLabel} (Desconectado)` : curBaseLabel;
-            if (optValT) optValT.textContent = `Jugar Valorant ${nextOffline ? '(Desconectado)' : ''}`;
-            if (optLolT) optLolT.textContent = `Jugar League of Legends ${nextOffline ? '(Desconectado)' : ''}`;
-            if (optRiotT) optRiotT.textContent = `Solo abrir Riot Client ${nextOffline ? '(Desconectado)' : ''}`;
-            
-            showToast(nextOffline ? 'Modo Desconectado activado para esta cuenta.' : 'Modo Desconectado desactivado.');
-        });
 
-        card.querySelector('.play-btn').addEventListener('click', () => beginSwitch(account, account.game || 'valorant', Boolean(accountDeceiveState[account.id])));
+        card.querySelector('.play-btn').addEventListener('click', () => beginSwitch(account, account.game || 'valorant', Boolean(settings?.globalStealth)));
         
         const dropBtn = card.querySelector('.play-btn-drop');
         const playMenu = card.querySelector('.play-menu');
@@ -840,25 +801,30 @@ function renderAccounts() {
         card.querySelector('.opt-val').addEventListener('click', (event) => {
             event.stopPropagation();
             playMenu.classList.add('hidden');
-            beginSwitch(account, 'valorant', Boolean(accountDeceiveState[account.id]));
+            beginSwitch(account, 'valorant', Boolean(settings?.globalStealth));
         });
         card.querySelector('.opt-lol').addEventListener('click', (event) => {
             event.stopPropagation();
             playMenu.classList.add('hidden');
-            beginSwitch(account, 'league_of_legends', Boolean(accountDeceiveState[account.id]));
+            beginSwitch(account, 'league_of_legends', Boolean(settings?.globalStealth));
         });
         card.querySelector('.opt-riot').addEventListener('click', (event) => {
             event.stopPropagation();
             playMenu.classList.add('hidden');
-            beginSwitch(account, 'none', Boolean(accountDeceiveState[account.id]));
+            beginSwitch(account, 'none', Boolean(settings?.globalStealth));
         });
         elements.accountsList.append(card);
     }
+    const chkGlobal = $('chkGlobalStealth');
+    const statusGlobal = $('statusGlobalStealth');
+    if (chkGlobal) chkGlobal.checked = Boolean(settings?.globalStealth);
+    if (statusGlobal) statusGlobal.textContent = settings?.globalStealth ? 'ON' : 'OFF';
+
     setSwitchControlsDisabled(Boolean(activeRequestId));
 }
 
 function setSwitchControlsDisabled(disabled) {
-    document.querySelectorAll('.play-btn, .play-btn-drop, .play-menu-item, .card-action.deceive-toggle, .account-card .edit, .account-card .delete, #btnAdd, #btnManageAccounts').forEach((button) => { button.disabled = disabled; });
+    document.querySelectorAll('.play-btn, .play-btn-drop, .play-menu-item, .account-card .edit, .account-card .delete, #btnAdd, #btnManageAccounts, #chkGlobalStealth').forEach((button) => { button.disabled = disabled; });
 }
 
 function setActiveNav(tabName) {
@@ -1744,6 +1710,26 @@ function bindEvents() {
             }
         } catch (error) {
             showToast(error.message || 'Error al alternar modo invisible.', 'error');
+        }
+    });
+
+    $('chkGlobalStealth')?.addEventListener('change', async (event) => {
+        const checked = Boolean(event.target.checked);
+        settings = { ...(settings || {}), globalStealth: checked };
+        const statusGlobal = $('statusGlobalStealth');
+        if (statusGlobal) statusGlobal.textContent = checked ? 'ON' : 'OFF';
+        if (rendererApi?.saveSettings) {
+            try {
+                await rendererApi.saveSettings(settings);
+            } catch {}
+        }
+        renderAccounts();
+        if (checked) {
+            showToast('👻 Modo Invisible ACTIVADO para todas las cuentas.');
+            playSound('success');
+        } else {
+            showToast('🟢 Modo Invisible DESACTIVADO.');
+            playSound();
         }
     });
 
