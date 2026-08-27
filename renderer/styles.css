@@ -1903,3 +1903,8 @@ body[data-style="light"] select option { background-color: #ffffff; color: #0000
 
 .window-controls button { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
 
+
+button.shortcut-keys.interactive { border: 1px solid transparent; background: transparent; cursor: pointer; transition: all 0.2s; padding: 4px; border-radius: 6px; }
+button.shortcut-keys.interactive:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.1); }
+button.shortcut-keys.interactive.listening { border-color: var(--accent); background: rgba(var(--accent-rgb), 0.1); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.2); }
+

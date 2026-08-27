@@ -1,3 +1,15 @@
+
+function formatShortcut(accelerator) {
+    if (!accelerator) return '<span style="color:var(--muted)">Sin asignar</span>';
+    const parts = accelerator.split('+');
+    return parts.map(p => {
+        if (p === 'CommandOrControl') return '<kbd>Ctrl</kbd>';
+        if (p === 'Super') return '<kbd>Win</kbd>';
+        if (p === 'Space') return '<kbd>Espacio</kbd>';
+        return `<kbd>${p}</kbd>`;
+    }).join(' <span class="or-sep">+</span> ');
+}
+
 const rendererApi = window.api || null;
 const $ = (id) => document.getElementById(id);
 
@@ -1030,7 +1042,7 @@ async function openSettings() {
         $('setAutoLaunchGame').checked = settings.autoLaunchGame;
         $('setAutoCloseRunningGames').checked = settings.autoCloseRunningGames !== false;
         $('setAutoSyncRank').checked = settings.autoSyncRank !== false;
-        $('setGlobalShortcut').value = settings.globalShortcut || 'CommandOrControl+Alt+R';
+        if($('btnGlobalShortcut')) { $('btnGlobalShortcut').innerHTML = formatShortcut(settings.globalShortcut || 'CommandOrControl+Alt+R'); }
         $('setSoundEnabled').checked = settings.soundEnabled;
         $('setReducedMotion').checked = settings.reducedMotion;
         $('setInitialDelay').value = settings.initialDelayMs;
@@ -1052,7 +1064,7 @@ async function openSettings() {
         $('setAutoLaunchGame').checked = settings.autoLaunchGame;
         $('setAutoCloseRunningGames').checked = settings.autoCloseRunningGames !== false;
         $('setAutoSyncRank').checked = settings.autoSyncRank !== false;
-        $('setGlobalShortcut').value = settings.globalShortcut || 'CommandOrControl+Alt+R';
+        if($('btnGlobalShortcut')) { $('btnGlobalShortcut').innerHTML = formatShortcut(settings.globalShortcut || 'CommandOrControl+Alt+R'); }
         $('setSoundEnabled').checked = settings.soundEnabled;
         $('setReducedMotion').checked = settings.reducedMotion;
         $('setInitialDelay').value = settings.initialDelayMs;
@@ -1102,7 +1114,7 @@ async function saveSettings(event) {
             autoLaunchGame: $('setAutoLaunchGame').checked,
             autoCloseRunningGames: $('setAutoCloseRunningGames').checked,
             autoSyncRank: $('setAutoSyncRank').checked,
-            globalShortcut: $('setGlobalShortcut').value,
+            globalShortcut: settings.globalShortcut,
             soundEnabled: $('setSoundEnabled').checked,
             reducedMotion: $('setReducedMotion').checked,
             initialDelayMs: $('setInitialDelay').value,
