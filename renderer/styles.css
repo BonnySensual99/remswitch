@@ -488,7 +488,7 @@ svg { width: 18px; height: 18px; fill: currentColor; }
 .favorite-mark { color: var(--warning); }
 .account-id { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .meta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 7px; }
-.meta-row > span:not(:last-child)::after { content: "•"; margin-left: 8px; color: var(--muted-2); opacity: 0.4; font-size: 8px; vertical-align: middle; }
+.meta-row > span:not(:last-child)::after { content: "â€¢"; margin-left: 8px; color: var(--muted-2); opacity: 0.4; font-size: 8px; vertical-align: middle; }
 /* Rank Badges */
 .meta-rank {
     font-weight: 850;
@@ -1139,7 +1139,7 @@ kbd {
 body.reduce-motion #bgCanvas { display: none; }
 body.reduce-motion *, body.reduce-motion *::before, body.reduce-motion *::after { animation: none !important; transition-duration: .01ms !important; }
 
-/* Visual refresh: menos ruido, más jerarquía y movimiento funcional. */
+/* Visual refresh: menos ruido, mÃ¡s jerarquÃ­a y movimiento funcional. */
 :root {
     --bg: #080b12;
     --panel: rgba(16, 22, 34, .82);
@@ -1907,4 +1907,5 @@ body[data-style="light"] select option { background-color: #ffffff; color: #0000
 button.shortcut-keys.interactive { border: 1px solid transparent; background: transparent; cursor: pointer; transition: all 0.2s; padding: 4px; border-radius: 6px; }
 button.shortcut-keys.interactive:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.1); }
 button.shortcut-keys.interactive.listening { border-color: var(--accent); background: rgba(var(--accent-rgb), 0.1); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.2); }
+
 

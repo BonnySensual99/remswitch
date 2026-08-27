@@ -89,16 +89,16 @@ function toPublicAccount(account) {
 }
 
 function encryptPassword(plainText) {
-    if (!plainText) throw new Error('La contrase�a es obligatoria.');
+    if (!plainText) throw new Error('La contraseï¿½a es obligatoria.');
     if (!safeStorage.isEncryptionAvailable()) {
-        throw new Error('Windows DPAPI no est� disponible para cifrar la contrase�a.');
+        throw new Error('Windows DPAPI no estï¿½ disponible para cifrar la contraseï¿½a.');
     }
     return `v2:${safeStorage.encryptString(plainText).toString('base64')}`;
 }
 
 function decryptLegacyDpapi(encryptedData) {
     if (!/^[A-Za-z0-9+/=]+$/.test(encryptedData) || encryptedData.length > 32768) {
-        throw new Error('El formato de contrase�a antigua no es v�lido.');
+        throw new Error('El formato de contraseï¿½a antigua no es vï¿½lido.');
     }
     const script = `Add-Type -AssemblyName System.Security;[Console]::OutputEncoding=[Text.Encoding]::UTF8;$d=[System.Security.Cryptography.ProtectedData]::Unprotect([Convert]::FromBase64String('${encryptedData}'),$null,[System.Security.Cryptography.DataProtectionScope]::CurrentUser);[Convert]::ToBase64String($d)`;
     const result = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
@@ -113,7 +113,7 @@ function decryptLegacyDpapi(encryptedData) {
 function decryptAccountPassword(account) {
     const encrypted = account.encryptedPassword || '';
     if (encrypted.startsWith('v2:')) {
-        if (!safeStorage.isEncryptionAvailable()) throw new Error('Windows DPAPI no est� disponible.');
+        if (!safeStorage.isEncryptionAvailable()) throw new Error('Windows DPAPI no estï¿½ disponible.');
         const encryptedBuffer = Buffer.from(encrypted.slice(3), 'base64');
         try {
             return safeStorage.decryptString(encryptedBuffer);
@@ -133,7 +133,7 @@ function decryptAccountPassword(account) {
             return plainText;
         }
     }
-    if (!encrypted) throw new Error('La cuenta no tiene una contrase�a guardada.');
+    if (!encrypted) throw new Error('La cuenta no tiene una contraseï¿½a guardada.');
 
     const plainText = decryptLegacyDpapi(encrypted);
     account.encryptedPassword = encryptPassword(plainText);
@@ -172,12 +172,12 @@ let riotSignatureCache = new Map();
 function validateRiotExecutable(inputPath, verifySignature = false) {
     const resolved = path.resolve(String(inputPath || ''));
     if (path.basename(resolved).toLowerCase() !== 'riotclientservices.exe' || !fs.existsSync(resolved)) {
-        throw new Error('Selecciona un RiotClientServices.exe v�lido.');
+        throw new Error('Selecciona un RiotClientServices.exe vï¿½lido.');
     }
     if (verifySignature) {
         if (riotSignatureCache.has(resolved)) {
             if (!riotSignatureCache.get(resolved)) {
-                throw new Error('El ejecutable no tiene una firma v�lida de Riot Games.');
+                throw new Error('El ejecutable no tiene una firma vï¿½lida de Riot Games.');
             }
             return resolved;
         }
@@ -192,7 +192,7 @@ function validateRiotExecutable(inputPath, verifySignature = false) {
         riotSignatureCache.set(resolved, isValid);
         
         if (!isValid) {
-            throw new Error('El ejecutable no tiene una firma v�lida de Riot Games.');
+            throw new Error('El ejecutable no tiene una firma vï¿½lida de Riot Games.');
         }
     }
     return resolved;
@@ -200,7 +200,7 @@ function validateRiotExecutable(inputPath, verifySignature = false) {
 
 function resolveValidatedRiotClient() {
     const foundPath = findRiotClientPath();
-    if (!foundPath) throw Object.assign(new Error('No se encontr� RiotClientServices.exe.'), { code: 'RIOT_NOT_FOUND' });
+    if (!foundPath) throw Object.assign(new Error('No se encontrï¿½ RiotClientServices.exe.'), { code: 'RIOT_NOT_FOUND' });
     try {
         return validateRiotExecutable(foundPath, true);
     } catch (error) {
@@ -288,12 +288,12 @@ function emitSwitch(payload) {
 
 async function waitForAuthenticatedSession(account, payloadBase) {
     const deadline = Date.now() + 90000;
-    emitSwitch({ ...payloadBase, state: 'WaitingForAuthentication', message: 'Esperando confirmaci�n de Riot. Completa el MFA si aparece.' });
+    emitSwitch({ ...payloadBase, state: 'WaitingForAuthentication', message: 'Esperando confirmaciï¿½n de Riot. Completa el MFA si aparece.' });
     while (Date.now() < deadline) {
         const sessionInfo = await queryRiotSession();
         if (sessionInfo) {
             if (account.riotId && sessionInfo.riotId.toLowerCase() !== account.riotId.toLowerCase()) {
-                const error = new Error(`Riot inici� otra cuenta (${sessionInfo.riotId}).`);
+                const error = new Error(`Riot iniciï¿½ otra cuenta (${sessionInfo.riotId}).`);
                 error.code = 'ACCOUNT_MISMATCH';
                 throw error;
             }
@@ -301,7 +301,7 @@ async function waitForAuthenticatedSession(account, payloadBase) {
         }
         await delay(1000);
     }
-    const error = new Error('Riot no confirm� la sesi�n a tiempo. Revisa la contrase�a o completa el MFA.');
+    const error = new Error('Riot no confirmï¿½ la sesiï¿½n a tiempo. Revisa la contraseï¿½a o completa el MFA.');
     error.code = 'AUTH_TIMEOUT';
     throw error;
 }
@@ -324,12 +324,12 @@ async function startAccountSwitch(accountId, requestId, targetGame = null) {
         const settings = normalizeSettings(store.loadSettings(), DEFAULT_SETTINGS);
         if (settings.globalShortcut && (settings.globalShortcut.includes(" ") || settings.globalShortcut.includes("crControl"))) settings.globalShortcut = "Alt+R";
 
-        emitSwitch({ ...payloadBase, state: 'CheckingRiotClient', message: 'Comprobando Riot Client�' });
+        emitSwitch({ ...payloadBase, state: 'CheckingRiotClient', message: 'Comprobando Riot Clientï¿½' });
         const runningGamesList = await getRunningProcessesAsync(GAME_PROCESSES);
         const runningGame = runningGamesList.length > 0 ? runningGamesList[0] : undefined;
         if (runningGame) {
             if (settings.autoCloseRunningGames) {
-                emitSwitch({ ...payloadBase, state: 'CheckingRiotClient', message: `Cerrando ${runningGame} para cambiar de cuenta�` });
+                emitSwitch({ ...payloadBase, state: 'CheckingRiotClient', message: `Cerrando ${runningGame} para cambiar de cuentaï¿½` });
                 const closed = await terminateGameProcesses();
                 if (!closed) throw Object.assign(new Error(`No se pudo cerrar el juego (${runningGame}).`), { code: 'GAME_CLOSE_FAILED' });
             } else {
@@ -339,7 +339,7 @@ async function startAccountSwitch(accountId, requestId, targetGame = null) {
 
         const riotPath = resolveValidatedRiotClient();
         const bridgePath = getBridgeExePath();
-        if (!fs.existsSync(bridgePath)) throw Object.assign(new Error('No se encontr� el puente nativo.'), { code: 'BRIDGE_MISSING' });
+        if (!fs.existsSync(bridgePath)) throw Object.assign(new Error('No se encontrï¿½ el puente nativo.'), { code: 'BRIDGE_MISSING' });
 
         const activeSession = await queryRiotSession();
         const effectiveGame = targetGame === 'none' ? null : (targetGame || (settings.autoLaunchGame ? (account.game || 'valorant') : null));
@@ -348,7 +348,7 @@ async function startAccountSwitch(accountId, requestId, targetGame = null) {
         if (alreadyLoggedIn) {
             if (effectiveGame && GAME_ARGS[effectiveGame]) {
                 const gameLabel = effectiveGame === 'league_of_legends' ? 'League of Legends' : 'VALORANT';
-                emitSwitch({ ...payloadBase, state: 'LaunchingGame', message: `Iniciando ${gameLabel}�` });
+                emitSwitch({ ...payloadBase, state: 'LaunchingGame', message: `Iniciando ${gameLabel}ï¿½` });
                 const { shell } = require('electron');
                 const uri = effectiveGame === 'league_of_legends' ? 'riotclient://launch/league_of_legends/live' : 'riotclient://launch/valorant/live';
                 await shell.openExternal(uri).catch(() => {});
@@ -361,24 +361,24 @@ async function startAccountSwitch(accountId, requestId, targetGame = null) {
                 }
 
             } else {
-                emitSwitch({ ...payloadBase, state: 'StartingRiotClient', message: 'Mostrando Riot Client�' });
+                emitSwitch({ ...payloadBase, state: 'StartingRiotClient', message: 'Mostrando Riot Clientï¿½' });
                 await launchDetached(riotPath, ['--open-shortcuts']);
             }
         } else {
             if (activeSession) {
-                emitSwitch({ ...payloadBase, state: 'LoggingOut', message: `Cerrando la sesi�n de ${activeSession.riotId}�` });
+                emitSwitch({ ...payloadBase, state: 'LoggingOut', message: `Cerrando la sesiï¿½n de ${activeSession.riotId}ï¿½` });
                 const logout = await logoutRiotSession();
                 if (!logout.loggedOut) {
-                    throw Object.assign(new Error('Riot Client no confirm� el cierre de sesi�n. Cierra sesi�n manualmente y vuelve a intentarlo.'), { code: 'RIOT_LOGOUT_FAILED', uiState: 'ManualActionRequired' });
+                    throw Object.assign(new Error('Riot Client no confirmï¿½ el cierre de sesiï¿½n. Cierra sesiï¿½n manualmente y vuelve a intentarlo.'), { code: 'RIOT_LOGOUT_FAILED', uiState: 'ManualActionRequired' });
                 }
-                emitSwitch({ ...payloadBase, state: 'LogoutConfirmed', message: 'Sesi�n anterior cerrada.' });
+                emitSwitch({ ...payloadBase, state: 'LogoutConfirmed', message: 'Sesiï¿½n anterior cerrada.' });
             }
 
             const password = decryptAccountPassword(account);
-            emitSwitch({ ...payloadBase, state: 'ClosingExistingSession', message: 'Cerrando la sesi�n anterior�' });
+            emitSwitch({ ...payloadBase, state: 'ClosingExistingSession', message: 'Cerrando la sesiï¿½n anteriorï¿½' });
             if (!(await terminateRiotProcesses())) throw Object.assign(new Error('Riot Client no pudo cerrarse.'), { code: 'RIOT_CLOSE_FAILED' });
 
-            emitSwitch({ ...payloadBase, state: 'StartingRiotClient', message: 'Abriendo Riot Client�' });
+            emitSwitch({ ...payloadBase, state: 'StartingRiotClient', message: 'Abriendo Riot Clientï¿½' });
             const initialArgs = (effectiveGame && GAME_ARGS[effectiveGame]) ? GAME_ARGS[effectiveGame] : ['--open-shortcuts'];
             await launchDetached(riotPath, initialArgs);
 
@@ -399,10 +399,10 @@ async function startAccountSwitch(accountId, requestId, targetGame = null) {
             
             if (effectiveGame && GAME_ARGS[effectiveGame]) {
                 const gameLabel = effectiveGame === 'league_of_legends' ? 'League of Legends' : 'VALORANT';
-                emitSwitch({ ...payloadBase, state: 'LaunchingGame', message: `Iniciando ${gameLabel}�` });
+                emitSwitch({ ...payloadBase, state: 'LaunchingGame', message: `Iniciando ${gameLabel}ï¿½` });
                 
                 
-                // Intentar los m�todos oficiales
+                // Intentar los mï¿½todos oficiales
                 const { shell } = require('electron');
                 const uri = effectiveGame === 'league_of_legends' ? 'riotclient://launch/league_of_legends/live' : 'riotclient://launch/valorant/live';
                 await shell.openExternal(uri).catch(() => {});
@@ -431,8 +431,8 @@ async function startAccountSwitch(accountId, requestId, targetGame = null) {
             accountId: account.id,
             game: activityGame,
             text: effectiveGame
-                ? `Sesi�n en ${account.displayName} � ${effectiveGame === 'league_of_legends' ? 'LoL' : 'Valorant'}`
-                : `Sesi�n en ${account.displayName} � Riot Client`,
+                ? `Sesiï¿½n en ${account.displayName} ï¿½ ${effectiveGame === 'league_of_legends' ? 'LoL' : 'Valorant'}`
+                : `Sesiï¿½n en ${account.displayName} ï¿½ Riot Client`,
             occurredAt: now,
             success: true
         });
@@ -536,9 +536,9 @@ function updateTrayMenu(sessionInfo = undefined) {
 
     const activeRiotId = currentSession?.riotId || '';
     if (activeRiotId) {
-        tray.setToolTip(`RemSwitcher � Sesi�n: ${activeRiotId}`);
+        tray.setToolTip(`RemSwitcher ï¿½ Sesiï¿½n: ${activeRiotId}`);
     } else {
-        tray.setToolTip('RemSwitcher � Gestor de cuentas Riot');
+        tray.setToolTip('RemSwitcher ï¿½ Gestor de cuentas Riot');
     }
 
     const valAccounts = accounts.filter((a) => a.game !== 'league_of_legends');
@@ -604,7 +604,7 @@ function updateTrayMenu(sessionInfo = undefined) {
     const menuTemplate = [
         { label: `RemSwitcher v${app.getVersion()}`, enabled: false },
         {
-            label: activeRiotId ? `? Riot: ${activeRiotId}` : '? Riot: Sin sesi�n',
+            label: activeRiotId ? `? Riot: ${activeRiotId}` : '? Riot: Sin sesiï¿½n',
             enabled: false
         },
         { type: 'separator' },
@@ -641,14 +641,14 @@ function updateTrayMenu(sessionInfo = undefined) {
 
     menuTemplate.push(
         {
-            label: 'Cerrar sesi�n de Riot Client',
+            label: 'Cerrar sesiï¿½n de Riot Client',
             enabled: !isBusy,
             click: async () => {
                 try {
                     await logoutRiotSession();
                     updateTrayMenu();
                 } catch (error) {
-                    log('WARN', `Error al cerrar sesi�n desde tray: ${error.message}`);
+                    log('WARN', `Error al cerrar sesiï¿½n desde tray: ${error.message}`);
                 }
             }
         },
@@ -683,7 +683,7 @@ function setupTray() {
     const iconPath = path.join(__dirname, 'build', 'icon.png');
     const fallback = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAE0lEQVR42mP8z8AARA0gFAAD/gAAVh8B9mH+m0cAAAAASUVORK5CYII=');
     tray = new Tray(fs.existsSync(iconPath) ? nativeImage.createFromPath(iconPath) : fallback);
-    tray.setToolTip('RemSwitcher � Gestor de cuentas Riot');
+    tray.setToolTip('RemSwitcher ï¿½ Gestor de cuentas Riot');
     tray.on('click', () => showMainWindow());
     tray.on('double-click', () => showMainWindow());
     updateTrayMenu();
@@ -705,17 +705,17 @@ function setupAutoUpdater() {
     });
 
     autoUpdater.on('update-available', (info) => {
-        log('INFO', `AutoUpdater: Actualizaci�n disponible v${info?.version || ''}`);
+        log('INFO', `AutoUpdater: Actualizaciï¿½n disponible v${info?.version || ''}`);
         emitUpdateStatus({
             status: 'available',
             version: info?.version,
-            message: `Descargando actualizaci�n v${info?.version || ''}...`
+            message: `Descargando actualizaciï¿½n v${info?.version || ''}...`
         });
     });
 
     autoUpdater.on('update-not-available', () => {
-        log('INFO', 'AutoUpdater: La aplicaci�n est� al d�a.');
-        emitUpdateStatus({ status: 'not-available', message: 'Tienes la versi�n m�s reciente.' });
+        log('INFO', 'AutoUpdater: La aplicaciï¿½n estï¿½ al dï¿½a.');
+        emitUpdateStatus({ status: 'not-available', message: 'Tienes la versiï¿½n mï¿½s reciente.' });
     });
 
     autoUpdater.on('error', (err) => {
@@ -728,7 +728,7 @@ function setupAutoUpdater() {
         emitUpdateStatus({
             status: 'downloading',
             percent,
-            message: `Descargando actualizaci�n: ${percent}%`
+            message: `Descargando actualizaciï¿½n: ${percent}%`
         });
     });
 
@@ -737,7 +737,7 @@ function setupAutoUpdater() {
         emitUpdateStatus({
             status: 'downloaded',
             version: info?.version,
-            message: `Versi�n v${info?.version || ''} descargada y lista para instalar.`
+            message: `Versiï¿½n v${info?.version || ''} descargada y lista para instalar.`
         });
     });
 }
@@ -832,7 +832,7 @@ function registerIpc() {
         const input = normalizeAccountInput(rawInput);
         const accounts = store.loadAccounts();
         const index = input.id ? accounts.findIndex((item) => item.id === input.id) : -1;
-        if (index < 0 && !input.password) throw new Error('Introduce una contrase�a para la nueva cuenta.');
+        if (index < 0 && !input.password) throw new Error('Introduce una contraseï¿½a para la nueva cuenta.');
         const existing = index >= 0 ? accounts[index] : null;
         const account = {
             ...(existing || {}),
@@ -956,7 +956,7 @@ function registerIpc() {
     });
     handle('start-play', ({ accountId, targetGame } = {}) => {
         const id = String(accountId || '');
-        if (!id) throw new Error('Cuenta no v�lida.');
+        if (!id) throw new Error('Cuenta no vï¿½lida.');
         const requestId = crypto.randomUUID();
         const admission = operationGate.begin(requestId);
         if (!admission.accepted) return admission;
@@ -1007,7 +1007,7 @@ function registerIpc() {
     handle('get-app-version', () => app.getVersion());
     handle('check-for-updates', async () => {
         if (!app.isPackaged) {
-            return { status: 'dev-mode', message: 'Las actualizaciones autom�ticas solo funcionan en la versi�n empaquetada.' };
+            return { status: 'dev-mode', message: 'Las actualizaciones automï¿½ticas solo funcionan en la versiï¿½n empaquetada.' };
         }
         try {
             const result = await autoUpdater.checkForUpdates();
@@ -1073,6 +1073,7 @@ app.on('window-all-closed', () => {
         }
     }
 });
+
 
 
 
