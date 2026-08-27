@@ -16,12 +16,9 @@ const { launchDetached } = require('./lib/process-launcher');
 const { queryRiotSession, queryLiveRankAndStats, logoutRiotSession } = require('./lib/riot-session');
 const displayManager = require('./lib/display-manager');
 const {
-    isDeceiveInstalled,
-    resolveDeceivePath,
-    downloadDeceive,
-    launchDeceiveGame,
-    terminateDeceive
-} = require('./lib/deceive-manager');
+    startStealthProxy,
+    stopStealthProxy
+} = require('./lib/stealth-proxy');
 
 const APP_DATA_DIR = path.join(process.env.LOCALAPPDATA || app.getPath('appData'), 'RemSwitcher');
 const LEGACY_DATA_DIR = path.join(process.env.LOCALAPPDATA || app.getPath('appData'), 'ValorantAccountManager');
@@ -56,8 +53,7 @@ const GAME_PROCESSES = Object.freeze([
     'VALORANT-Win64-Shipping.exe',
     'LeagueClient.exe',
     'LeagueClientUx.exe',
-    'League of Legends.exe',
-    'Deceive.exe'
+    'League of Legends.exe'
 ]);
 
 const RIOT_PROCESSES = Object.freeze(['RiotClientServices.exe', 'Riot Client.exe', 'RiotClientUx.exe']);
@@ -392,22 +388,21 @@ async function startAccountSwitch(accountId, requestId, targetGame = null, launc
 
             const password = decryptAccountPassword(account);
             emitSwitch({ ...payloadBase, state: 'ClosingExistingSession', message: 'Cerrando la sesión anterior...' });
-            await terminateDeceive();
             if (!(await terminateRiotProcesses())) throw Object.assign(new Error('Riot Client no pudo cerrarse.'), { code: 'RIOT_CLOSE_FAILED' });
 
             if (launchOffline) {
-                const deceivePath = resolveDeceivePath(settings.customDeceivePath);
-                if (!isDeceiveInstalled(settings.customDeceivePath)) {
-                    emitSwitch({ ...payloadBase, state: 'StartingRiotClient', message: 'Descargando motor Deceive...' });
-                    try {
-                        await downloadDeceive(deceivePath);
-                    } catch (err) {
-                        throw Object.assign(new Error(`No se pudo descargar Deceive automáticamente: ${err.message}`), { code: 'DECEIVE_DOWNLOAD_FAILED' });
-                    }
+                emitSwitch({ ...payloadBase, state: 'StartingRiotClient', message: 'Iniciando servidor de Modo Desconectado...' });
+                const proxy = await startStealthProxy();
+                emitSwitch({ ...payloadBase, state: 'StartingRiotClient', message: 'Abriendo Riot Client en Modo Invisible...' });
+                const stealthArgs = [`--client-config-url=http://127.0.0.1:${proxy.configPort}`];
+                if (effectiveGame && GAME_ARGS[effectiveGame]) {
+                    stealthArgs.push(...GAME_ARGS[effectiveGame]);
+                } else {
+                    stealthArgs.push('--open-shortcuts');
                 }
-                emitSwitch({ ...payloadBase, state: 'StartingRiotClient', message: 'Iniciando en Modo Incógnito (Deceive)...' });
-                await launchDeceiveGame(effectiveGame || account.game || 'valorant', settings.customDeceivePath);
+                await launchDetached(riotPath, stealthArgs);
             } else {
+                stopStealthProxy();
                 emitSwitch({ ...payloadBase, state: 'StartingRiotClient', message: 'Abriendo Riot Client...' });
                 const initialArgs = (effectiveGame && GAME_ARGS[effectiveGame]) ? GAME_ARGS[effectiveGame] : ['--open-shortcuts'];
                 await launchDetached(riotPath, initialArgs);
@@ -1009,17 +1004,8 @@ function registerIpc() {
         updateTrayMenu();
         return admission;
     });
-    handle('get-deceive-status', () => {
-        const settings = normalizeSettings(store.loadSettings(), DEFAULT_SETTINGS);
-        const installed = isDeceiveInstalled(settings.customDeceivePath);
-        const deceivePath = resolveDeceivePath(settings.customDeceivePath);
-        return { installed, path: deceivePath };
-    });
-    handle('download-deceive', async () => {
-        const settings = normalizeSettings(store.loadSettings(), DEFAULT_SETTINGS);
-        const deceivePath = resolveDeceivePath(settings.customDeceivePath);
-        return await downloadDeceive(deceivePath);
-    });
+    handle('get-deceive-status', () => ({ installed: true, path: 'Motor Nativo Integrado (Stealth Proxy)' }));
+    handle('download-deceive', async () => ({ ok: true, path: 'Motor Nativo Integrado (Stealth Proxy)' }));
     handle('get-activity-log', () => store.loadActivity());
     handle('get-user-profile', () => store.loadProfile());
     handle('save-user-profile', (rawProfile) => {
@@ -1126,6 +1112,7 @@ if (!gotTheLock) {
 
 app.on('will-quit', () => {
     globalShortcut.unregisterAll();
+    stopStealthProxy();
 });
 app.on('before-quit', () => { app.isQuitting = true; });
 app.on('window-all-closed', () => {

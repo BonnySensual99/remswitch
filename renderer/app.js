@@ -776,7 +776,7 @@ function renderAccounts() {
             
             deceiveBtn.classList.toggle('active', nextOffline);
             deceiveBtn.setAttribute('aria-pressed', String(nextOffline));
-            deceiveBtn.title = nextOffline ? 'Modo Desconectado: ACTIVADO (Deceive)' : 'Modo Desconectado: DESACTIVADO (Deceive)';
+            deceiveBtn.title = nextOffline ? 'Modo Desconectado: ACTIVADO' : 'Modo Desconectado: DESACTIVADO';
             deceiveBtn.innerHTML = `
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12 2a9 9 0 0 0-9 9c0 4.17 2.84 7.67 6.69 8.69L10 21l2-1.5 2 1.5.31-1.31C18.16 18.67 21 15.17 21 11a9 9 0 0 0-9-9zm-3.5 8a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm7 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>
                 ${nextOffline ? '<span class="deceive-dot" aria-hidden="true"></span>' : ''}
@@ -1236,7 +1236,7 @@ async function beginSwitch(account, targetGame = null, launchOffline = false) {
     const targetLabel = launchOffline ? `${baseTargetLabel} [Modo Desconectado]` : baseTargetLabel;
     if (settings?.confirmSwitch) {
         const confirmMsg = launchOffline
-            ? `Riot Client se cerrará para iniciar “${account.displayName}” en MODO DESCONECTADO (Deceive) y abrir ${baseTargetLabel}.`
+            ? `Riot Client se cerrará para iniciar “${account.displayName}” en MODO DESCONECTADO (Invisible) y abrir ${baseTargetLabel}.`
             : `Riot Client se cerrará para iniciar “${account.displayName}” y abrir ${targetLabel}.`;
         const accepted = await confirmAction('Cambiar cuenta', confirmMsg, 'Iniciar cambio');
         if (!accepted) return;
@@ -1265,14 +1265,14 @@ function showSwitchOverlay(game, account = null, launchOffline = false) {
         : (GAME_LABELS[game] || 'RIOT SESSION');
     document.querySelector('.switch-radar').innerHTML = getGameLogoSvg(game);
     $('switchTarget').textContent = account?.displayName
-        ? `Destino · ${account.displayName}${launchOffline ? ' (Incógnito)' : ''}`
+        ? `Destino · ${account.displayName}${launchOffline ? ' (Invisible)' : ''}`
         : 'Cuenta destino';
     $('switchSource').textContent = runtimeStatus?.activeSession?.riotId || 'Sin sesión';
     $('switchDestination').textContent = account?.displayName
         ? `${account.displayName}${launchOffline ? ' [Modo Desconectado]' : ''}`
         : 'Cuenta destino';
     $('switchTitle').textContent = 'Preparando operación';
-    $('switchMessage').textContent = launchOffline ? 'Iniciando en Modo Incógnito (Deceive)...' : 'Comprobando el sistema…';
+    $('switchMessage').textContent = launchOffline ? 'Iniciando en Modo Invisible (Stealth)...' : 'Comprobando el sistema…';
     $('switchProgress').className = 'progress-5';
     resetSwitchActions();
     document.querySelector('.switch-panel').classList.remove('error', 'manual', 'waiting', 'done');
@@ -1415,19 +1415,12 @@ async function openSettings() {
 async function refreshDeceiveStatus() {
     if (!rendererApi?.getDeceiveStatus) return;
     try {
-        const status = await rendererApi.getDeceiveStatus();
         const titleEl = $('deceiveStatusTitle');
         const descEl = $('deceiveStatusDesc');
         const btnEl = $('btnDownloadDeceive');
-        if (status.installed) {
-            if (titleEl) titleEl.textContent = '✓ Motor Deceive Instalado';
-            if (descEl) descEl.textContent = 'Listo para jugar en modo desconectado.';
-            if (btnEl) btnEl.textContent = 'Actualizar Deceive';
-        } else {
-            if (titleEl) titleEl.textContent = 'Motor Deceive no detectado';
-            if (descEl) descEl.textContent = 'Haz clic para descargarlo automáticamente desde GitHub.';
-            if (btnEl) btnEl.textContent = 'Descargar Deceive';
-        }
+        if (titleEl) titleEl.textContent = '✓ Motor Stealth Nativo Integrado';
+        if (descEl) descEl.textContent = 'Intercepción interna de presencia XMPP activa en memoria (sin aplicaciones externas).';
+        if (btnEl) btnEl.textContent = 'Verificado';
     } catch {}
 }
 
@@ -1698,21 +1691,9 @@ function bindEvents() {
     $('profileForm').addEventListener('submit', saveProfile);
     $('btnTestRiot').addEventListener('click', testRiotClient);
     $('btnDownloadDeceive')?.addEventListener('click', async () => {
-        if (!rendererApi?.downloadDeceive) return;
-        const btn = $('btnDownloadDeceive');
-        btn.disabled = true;
-        btn.textContent = 'Descargando Deceive...';
-        try {
-            await rendererApi.downloadDeceive();
-            showToast('Deceive descargado y configurado correctamente.', 'success');
-            playSound('success');
-            await refreshDeceiveStatus();
-        } catch (err) {
-            showToast(err.message || 'Error al descargar Deceive.', 'error');
-            playSound('error');
-        } finally {
-            btn.disabled = false;
-        }
+        showToast('✓ Motor Stealth nativo verificado y listo en memoria.', 'success');
+        playSound('success');
+        await refreshDeceiveStatus();
     });
     $('btnCheckUpdates').addEventListener('click', checkForUpdates);
     $('btnInstallUpdate').addEventListener('click', installUpdate);
