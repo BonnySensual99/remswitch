@@ -1909,3 +1909,9 @@ button.shortcut-keys.interactive:hover { background: rgba(255,255,255,0.06); bor
 button.shortcut-keys.interactive.listening { border-color: var(--accent); background: rgba(var(--accent-rgb), 0.1); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.2); }
 
 
+
+.form-section { margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.form-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.form-section h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent); margin: 0 0 12px 0; font-weight: 700; }
+.card-action.favorite.active { color: #ffd700; border-color: rgba(255, 215, 0, 0.4); background: rgba(255, 215, 0, 0.05); }
+.card-action.favorite.active:hover { color: #ffea00; border-color: #ffd700; background: rgba(255, 215, 0, 0.1); }

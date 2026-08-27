@@ -134,38 +134,56 @@
             </div>
             <form id="accountForm">
                 <input type="hidden" id="accId">
-<div class="form-group full"><label for="accProfile">Perfil</label><select id="accProfile"></select></div>
-                <div class="form-grid">
-                    <div class="form-group"><label for="accDisplayName">Nombre mostrado *</label><input type="text" id="accDisplayName" required placeholder="Mi Smurf EUW"></div>
-                    <div class="form-group"><label for="accGame">Juego principal *</label><select id="accGame"><option value="valorant">VALORANT</option><option value="league_of_legends">League of Legends</option></select></div>
-                    <div class="form-group"><label for="accRegion">Región *</label><select id="accRegion"><option value="EU">EU</option><option value="NA">NA</option><option value="LATAM">LATAM</option><option value="KR">KR</option><option value="AP">AP</option><option value="BR">BR</option></select></div>
-                    <div class="form-group"><label for="accUsername">Usuario de Riot *</label><input type="text" id="accUsername" required autocomplete="off" placeholder="Usuario privado"></div>
-                    <div class="form-group"><label for="accPassword" id="accPasswordLabel">Contraseña *</label><div class="password-wrap"><input type="password" id="accPassword" required autocomplete="new-password" placeholder="••••••••"><button id="btnTogglePass" type="button" aria-label="Mostrar contraseña"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c5.5 0 9.5 5.3 9.5 7s-4 7-9.5 7S2.5 13.7 2.5 12 6.5 5 12 5Zm0 2c-3.8 0-6.8 3.3-7.4 5 .6 1.7 3.6 5 7.4 5s6.8-3.3 7.4-5c-.6-1.7-3.6-5-7.4-5Zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z"/></svg></button></div><small class="form-hint" id="accPasswordHint">Se cifra con DPAPI en este equipo.</small></div>
-                    <div class="form-group"><label for="accRiotId">Riot ID</label><input type="text" id="accRiotId" placeholder="Nombre#TAG"></div>
-                    <div class="form-group"><label for="accRank">Rango competitivo</label><select id="accRank"></select></div>
-                    <div class="form-group"><label for="accLevel">Nivel</label><input type="number" id="accLevel" min="1" max="9999" placeholder="Nivel actual"></div>
-                    
-                    <div class="form-group"><label for="accAvatar">Icono del perfil</label><select id="accAvatar"></select></div>
-                    <div class="form-group full custom-avatar-field">
-                        <label>Avatar personalizado (opcional)</label>
-                        <div class="custom-avatar-uploader">
-                            <div class="avatar-preview-box" id="avatarPreviewBox">
-                                <img id="avatarPreviewImg" src="" alt="Vista previa" class="hidden">
-                                <span id="avatarPreviewFallback">Por defecto</span>
-                            </div>
-                            <div class="avatar-uploader-actions">
-                                <input type="file" id="inputCustomAvatar" accept="image/png, image/jpeg, image/webp, image/svg+xml, image/gif" class="hidden">
-                                <button type="button" class="btn secondary small" id="btnUploadAvatar"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="margin-right: 6px;"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Subir imagen propia</button>
-                                <button type="button" class="btn secondary small danger hidden" id="btnRemoveCustomAvatar">Usar personaje por defecto</button>
-                                <small class="form-hint">PNG, JPG, WEBP o SVG (se adapta automáticamente).</small>
-                            </div>
-                        </div>
-                        <input type="hidden" id="accCustomAvatar" value="">
+                
+                <div class="form-section">
+                    <h3>Credenciales de acceso</h3>
+                    <div class="form-grid">
+                        <div class="form-group"><label for="accUsername">Usuario de Riot *</label><input type="text" id="accUsername" required autocomplete="off" placeholder="Usuario privado"></div>
+                        <div class="form-group"><label for="accPassword" id="accPasswordLabel">Contraseña *</label><div class="password-wrap"><input type="password" id="accPassword" required autocomplete="new-password" placeholder="••••••••"><button id="btnTogglePass" type="button" aria-label="Mostrar contraseña"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c5.5 0 9.5 5.3 9.5 7s-4 7-9.5 7S2.5 13.7 2.5 12 6.5 5 12 5Zm0 2c-3.8 0-6.8 3.3-7.4 5 .6 1.7 3.6 5 7.4 5s6.8-3.3 7.4-5c-.6-1.7-3.6-5-7.4-5Zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z"/></svg></button></div><small class="form-hint" id="accPasswordHint">Se cifra con DPAPI en este equipo.</small></div>
+                        <div class="form-group"><label for="accRegion">Región *</label><select id="accRegion"><option value="EU">EU</option><option value="NA">NA</option><option value="LATAM">LATAM</option><option value="KR">KR</option><option value="AP">AP</option><option value="BR">BR</option></select></div>
                     </div>
-
-                    <div class="form-group full"><label for="accNotes">Notas privadas</label><textarea id="accNotes" rows="2" placeholder="Notas sobre la cuenta…"></textarea></div>
                 </div>
-                <footer class="modal-footer"><button class="btn secondary" id="btnCancelAccount" type="button">Cancelar</button><button class="btn primary" type="submit">Guardar cuenta</button></footer>
+
+                <div class="form-section">
+                    <h3>Detalles de la cuenta</h3>
+                    <div class="form-grid">
+                        <div class="form-group"><label for="accDisplayName">Nombre mostrado *</label><input type="text" id="accDisplayName" required placeholder="Mi Smurf EUW"></div>
+                        <div class="form-group"><label for="accRiotId">Riot ID</label><input type="text" id="accRiotId" placeholder="Nombre#TAG"></div>
+                        <div class="form-group"><label for="accGame">Juego principal *</label><select id="accGame"><option value="valorant">VALORANT</option><option value="league_of_legends">League of Legends</option></select></div>
+                        <div class="form-group"><label for="accRank">Rango competitivo</label><select id="accRank"></select></div>
+                        <div class="form-group"><label for="accLevel">Nivel</label><input type="number" id="accLevel" min="1" max="9999" placeholder="Nivel actual"></div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Personalización</h3>
+                    <div class="form-grid">
+                        <div class="form-group"><label for="accProfile">Perfil</label><select id="accProfile"></select></div>
+                        <div class="form-group"><label for="accAvatar">Icono del perfil</label><select id="accAvatar"></select></div>
+                        <div class="form-group full custom-avatar-field">
+                            <label>Avatar personalizado (opcional)</label>
+                            <div class="custom-avatar-uploader">
+                                <div class="avatar-preview-box" id="avatarPreviewBox">
+                                    <img id="avatarPreviewImg" src="" alt="Vista previa" class="hidden">
+                                    <span id="avatarPreviewFallback">Por defecto</span>
+                                </div>
+                                <div class="avatar-uploader-actions">
+                                    <input type="file" id="inputCustomAvatar" accept="image/png, image/jpeg, image/webp, image/svg+xml, image/gif" class="hidden">
+                                    <button type="button" class="btn secondary small" id="btnUploadAvatar"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="margin-right: 6px;"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Subir imagen propia</button>
+                                    <button type="button" class="btn secondary small danger hidden" id="btnRemoveCustomAvatar">Usar personaje por defecto</button>
+                                    <small class="form-hint">PNG, JPG, WEBP o SVG (se adapta automáticamente).</small>
+                                </div>
+                            </div>
+                            <input type="hidden" id="accCustomAvatar" value="">
+                        </div>
+                        <div class="form-group full"><label for="accNotes">Notas privadas</label><textarea id="accNotes" placeholder="Notas sobre la cuenta..." rows="2"></textarea></div>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn secondary" id="btnCancelAccount">Cancelar</button>
+                    <button type="submit" class="btn primary small">Añadir</button>
+                </div>
             </form>
         </section>
     </div>
