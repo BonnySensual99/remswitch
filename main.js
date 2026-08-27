@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, safeStorage, session, globalShortcut } = require('electron');
+﻿const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, safeStorage, session, globalShortcut } = require('electron');
 app.disableHardwareAcceleration();
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
@@ -553,7 +553,7 @@ function updateTrayMenu(sessionInfo = undefined) {
             label: `${prefix}${account.displayName}${regionStr}`,
             submenu: [
                 {
-                    label: `? Iniciar (${defaultGameLabel})`,
+                    label: `▶ Iniciar (${defaultGameLabel})`,
                     enabled: !isBusy,
                     click: () => {
                         if (operationGate.activeRequestId) return;
@@ -565,7 +565,7 @@ function updateTrayMenu(sessionInfo = undefined) {
                 },
                 { type: 'separator' },
                 {
-                    label: '?? Jugar Valorant',
+                    label: '🎮 Jugar Valorant',
                     enabled: !isBusy,
                     click: () => {
                         if (operationGate.activeRequestId) return;
@@ -576,7 +576,7 @@ function updateTrayMenu(sessionInfo = undefined) {
                     }
                 },
                 {
-                    label: '?? Jugar League of Legends',
+                    label: '⚔️ Jugar League of Legends',
                     enabled: !isBusy,
                     click: () => {
                         if (operationGate.activeRequestId) return;
@@ -587,7 +587,7 @@ function updateTrayMenu(sessionInfo = undefined) {
                     }
                 },
                 {
-                    label: '?? Solo abrir Riot Client',
+                    label: '🔑 Solo abrir Riot Client',
                     enabled: !isBusy,
                     click: () => {
                         if (operationGate.activeRequestId) return;
@@ -641,14 +641,14 @@ function updateTrayMenu(sessionInfo = undefined) {
 
     menuTemplate.push(
         {
-            label: 'Cerrar sesiï¿½n de Riot Client',
+            label: 'Cerrar sesión de Riot Client',
             enabled: !isBusy,
             click: async () => {
                 try {
                     await logoutRiotSession();
                     updateTrayMenu();
                 } catch (error) {
-                    log('WARN', `Error al cerrar sesiï¿½n desde tray: ${error.message}`);
+                    log('WARN', `Error al cerrar sesión desde tray: ${error.message}`);
                 }
             }
         },
@@ -1073,6 +1073,8 @@ app.on('window-all-closed', () => {
         }
     }
 });
+
+
 
 
 
