@@ -217,83 +217,110 @@
             </div>
             <form id="accountForm">
                 <input type="hidden" id="accId">
-                <input type="hidden" id="accRank">
-                <input type="hidden" id="accAvatar">
-                <input type="hidden" id="accCustomAvatar">
-                
-                <div class="avatar-picker-section">
-                    <div class="avatar-preview-box">
-                        <img id="avatarPreviewImg" class="avatar-preview-img hidden" alt="Avatar">
-                        <span id="avatarPreviewFallback" class="avatar-preview-fallback">R</span>
-                    </div>
-                    <div class="avatar-picker-controls">
-                        <label class="btn secondary small" for="inputCustomAvatar" id="btnUploadAvatar">Subir avatar</label>
-                        <input type="file" id="inputCustomAvatar" accept="image/png,image/jpeg,image/webp" class="hidden">
-                        <button type="button" class="btn secondary small hidden" id="btnRemoveCustomAvatar">Quitar avatar</button>
-                        <small class="text-muted">PNG, JPG o WEBP (máx. 2MB)</small>
+
+                <div class="form-section">
+                    <h3>Credenciales de acceso</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="accUsername">Usuario de Riot *</label>
+                            <input type="text" id="accUsername" required autocomplete="off" placeholder="Usuario privado">
+                        </div>
+                        <div class="form-group">
+                            <label for="accPassword" id="accPasswordLabel">Contraseña *</label>
+                            <div class="password-wrap">
+                                <input type="password" id="accPassword" required autocomplete="new-password" placeholder="••••••••">
+                                <button id="btnTogglePass" type="button" aria-label="Mostrar contraseña">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c5.5 0 9.5 5.3 9.5 7s-4 7-9.5 7S2.5 13.7 2.5 12 6.5 5 12 5Zm0 2c-3.8 0-6.8 3.3-7.4 5 .6 1.7 3.6 5 7.4 5s6.8-3.3 7.4-5c-.6-1.7-3.6-5-7.4-5Zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z"/></svg>
+                                </button>
+                            </div>
+                            <small class="form-hint" id="accPasswordHint">Se cifra con DPAPI en este equipo.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="accRegion">Región *</label>
+                            <select id="accRegion">
+                                <option value="EU">EU</option>
+                                <option value="NA">NA</option>
+                                <option value="LATAM">LATAM</option>
+                                <option value="KR">KR</option>
+                                <option value="AP">AP</option>
+                                <option value="BR">BR</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
-                <div class="form-grid">
-                    <div class="form-group full">
-                        <label for="accProfile">Perfil / Workspace</label>
-                        <select id="accProfile"></select>
-                    </div>
-                    <div class="form-group full">
-                        <label for="accDisplayName">Nombre de la cuenta (Alias)</label>
-                        <input type="text" id="accDisplayName" required placeholder="Mi Smurf Valorant">
-                    </div>
-                    <div class="form-group">
-                        <label for="accGame">Juego principal</label>
-                        <select id="accGame">
-                            <option value="valorant">Valorant</option>
-                            <option value="league_of_legends">League of Legends</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="accRegion">Región</label>
-                        <select id="accRegion">
-                            <option value="eu">Europa (EU)</option>
-                            <option value="na">Norteamérica (NA)</option>
-                            <option value="latam">Latinoamérica (LATAM)</option>
-                            <option value="br">Brasil (BR)</option>
-                            <option value="kr">Corea (KR)</option>
-                            <option value="ap">Asia Pacífico (AP)</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="accUsername">Usuario de inicio de sesión</label>
-                        <input type="text" id="accUsername" required placeholder="usuario_riot">
-                    </div>
-                    <div class="form-group">
-                        <label for="accPassword">Contraseña</label>
-                        <div class="password-input-wrap">
-                            <input type="password" id="accPassword" placeholder="••••••••">
-                            <button type="button" class="btn-icon" id="btnTogglePass" aria-label="Mostrar contraseña">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-                            </button>
+                <div class="form-section">
+                    <h3>Detalles de la cuenta</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="accDisplayName">Nombre mostrado *</label>
+                            <input type="text" id="accDisplayName" required placeholder="Mi Smurf EUW">
+                        </div>
+                        <div class="form-group">
+                            <label for="accRiotId">Riot ID</label>
+                            <input type="text" id="accRiotId" placeholder="Nombre#TAG">
+                        </div>
+                        <div class="form-group">
+                            <label for="accGame">Juego principal *</label>
+                            <select id="accGame">
+                                <option value="valorant">VALORANT</option>
+                                <option value="league_of_legends">League of Legends</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="accRank">Rango competitivo</label>
+                            <select id="accRank"></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="accLevel">Nivel</label>
+                            <input type="number" id="accLevel" min="1" max="9999" placeholder="Nivel actual">
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label for="accRiotId">Riot ID</label>
-                        <input type="text" id="accRiotId" placeholder="Player#EUW">
-                    </div>
-                    <div class="form-group">
-                        <label for="accLevel">Nivel</label>
-                        <input type="number" id="accLevel" min="1" placeholder="1">
-                    </div>
-                    <div class="form-group full">
-                        <label for="accNotes">Notas / Descripción</label>
-                        <textarea id="accNotes" rows="2" placeholder="Notas sobre esta cuenta..."></textarea>
-                    </div>
-                    <div class="form-group full">
-                        <label class="switch-row compact-switch" for="accDeceiveOffline">
-                            <span>
-                                <strong>👻 Iniciar siempre en Modo Desconectado (Deceive)</strong>
-                                <small>Aparece como desconectado ante tus amigos de Riot al jugar</small>
-                            </span>
-                            <input type="checkbox" id="accDeceiveOffline">
-                        </label>
+                </div>
+
+                <div class="form-section">
+                    <h3>Personalización & Opciones</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="accProfile">Perfil / Workspace</label>
+                            <select id="accProfile"></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="accAvatar">Icono del perfil (Personaje)</label>
+                            <select id="accAvatar"></select>
+                        </div>
+                        <div class="form-group full custom-avatar-field">
+                            <label>Avatar personalizado (opcional)</label>
+                            <div class="custom-avatar-uploader">
+                                <div class="avatar-preview-box" id="avatarPreviewBox">
+                                    <img id="avatarPreviewImg" src="" alt="Vista previa" class="hidden">
+                                    <span id="avatarPreviewFallback">Por defecto</span>
+                                </div>
+                                <div class="avatar-uploader-actions">
+                                    <input type="file" id="inputCustomAvatar" accept="image/png, image/jpeg, image/webp, image/svg+xml, image/gif" class="hidden">
+                                    <button type="button" class="btn secondary small" id="btnUploadAvatar">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="margin-right: 6px;"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                                        Subir imagen propia
+                                    </button>
+                                    <button type="button" class="btn secondary small danger hidden" id="btnRemoveCustomAvatar">Usar personaje por defecto</button>
+                                    <small class="form-hint">PNG, JPG, WEBP o SVG (se adapta automáticamente).</small>
+                                </div>
+                            </div>
+                            <input type="hidden" id="accCustomAvatar" value="">
+                        </div>
+                        <div class="form-group full">
+                            <label for="accNotes">Notas privadas</label>
+                            <textarea id="accNotes" placeholder="Notas sobre la cuenta..." rows="2"></textarea>
+                        </div>
+                        <div class="form-group full">
+                            <label class="switch-row compact-switch" for="accDeceiveOffline">
+                                <span>
+                                    <strong>👻 Iniciar siempre en Modo Desconectado (Deceive)</strong>
+                                    <small>Aparece como desconectado ante tus amigos de Riot al jugar</small>
+                                </span>
+                                <input type="checkbox" id="accDeceiveOffline">
+                            </label>
+                        </div>
                     </div>
                 </div>
 
