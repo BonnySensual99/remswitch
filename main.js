@@ -289,7 +289,7 @@ function emitSwitch(payload) {
 async function waitForAuthenticatedSession(account, payloadBase) {
     const deadline = Date.now() + 90000;
     emitSwitch({ ...payloadBase, state: 'WaitingForAuthentication', message: 'Esperando confirmación de Riot. Completa el MFA si aparece.' });
-    while (Date.now() < deadline) {
+    while (Date.now() < deadline) {`n        if (operationGate.activeRequestId !== payloadBase.requestId) {`n            const error = new Error('Operación cancelada por el usuario.');`n            error.code = 'CANCELLED';`n            error.uiState = 'Cancelled';`n            throw error;`n        }
         const sessionInfo = await queryRiotSession();
         if (sessionInfo) {
             if (account.riotId && sessionInfo.riotId.toLowerCase() !== account.riotId.toLowerCase()) {
@@ -954,7 +954,7 @@ function registerIpc() {
         const result = await syncAccountsWithLiveRank();
         return result || { synced: false };
     });
-    handle('start-play', ({ accountId, targetGame } = {}) => {
+    handle('cancel-switch', () => {`n        if (operationGate.activeRequestId) {`n            operationGate.end(operationGate.activeRequestId);`n            updateTrayMenu();`n            return { cancelled: true };`n        }`n        return { cancelled: false };`n    });`n    handle('start-play', ({ accountId, targetGame } = {}) => {
         const id = String(accountId || '');
         if (!id) throw new Error('Cuenta no válida.');
         const requestId = crypto.randomUUID();
@@ -1073,6 +1073,7 @@ app.on('window-all-closed', () => {
         }
     }
 });
+
 
 
 
