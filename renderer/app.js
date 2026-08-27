@@ -539,26 +539,9 @@ function renderRuntime() {
 }
 
 async function refreshStealthUI() {
-    if (!rendererApi?.stealthGetStatus) return;
-    try {
-        const status = await rendererApi.stealthGetStatus();
-        const toggleBtn = $('btnLiveStealthToggle');
-        const label = $('liveStealthLabel');
-        if (!toggleBtn || !label) return;
-
-        if (status.active) {
-            toggleBtn.classList.remove('hidden');
-            const isOffline = (status.mode !== 'online');
-            toggleBtn.classList.toggle('active', isOffline);
-            toggleBtn.classList.toggle('online', !isOffline);
-            label.textContent = isOffline ? 'Desconectado' : 'Conectado';
-            toggleBtn.title = isOffline 
-                ? 'Modo Invisible ACTIVO: Apareces desconectado ante amigos. Clic para aparecer conectado.'
-                : 'Modo Invisible DESACTIVADO: Apareces conectado. Clic para aparecer desconectado.';
-        } else {
-            toggleBtn.classList.add('hidden');
-        }
-    } catch {}
+    // The live stealth toggle button has been removed from the UI.
+    // If we need to update other UI elements based on stealth status in the future,
+    // we can do it here. For now, it's just a no-op.
 }
 
 const GAME_LOGOS = {
@@ -1710,24 +1693,7 @@ function bindEvents() {
         $('btnTogglePass').setAttribute('aria-label', input.type === 'password' ? 'Mostrar contraseña' : 'Ocultar contraseña');
     });
 
-    $('btnLiveStealthToggle')?.addEventListener('click', async () => {
-        if (!rendererApi?.stealthGetStatus || !rendererApi?.stealthSetMode) return;
-        try {
-            const current = await rendererApi.stealthGetStatus();
-            const nextMode = (current.mode === 'online') ? 'offline' : 'online';
-            await rendererApi.stealthSetMode(nextMode);
-            await refreshStealthUI();
-            if (nextMode === 'offline') {
-                showToast('👻 Modo Invisible activado: Apareces como DESCONECTADO.');
-                playSound('success');
-            } else {
-                showToast('🟢 Modo Visible activado: Apareces como CONECTADO.');
-                playSound('success');
-            }
-        } catch (error) {
-            showToast(error.message || 'Error al alternar modo invisible.', 'error');
-        }
-    });
+
 
     $('chkGlobalStealth')?.addEventListener('change', async (event) => {
         const checked = Boolean(event.target.checked);

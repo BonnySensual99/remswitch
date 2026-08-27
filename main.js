@@ -557,11 +557,14 @@ function updateTrayMenu(sessionInfo = undefined) {
         activeRiotId: currentSession?.riotId || '',
         isBusy,
         minimizeToTray: settings.minimizeToTray,
+        stealthActive: isStealthActive(),
+        stealthMode: getStealthMode(),
         accounts: accounts.map(a => ({ id: a.id, display: a.displayName, riotId: a.riotId, region: a.region, game: a.game }))
     });
     
     if (currentStateHash === lastTrayStateHash) return;
     lastTrayStateHash = currentStateHash;
+
 
     const activeRiotId = currentSession?.riotId || '';
     if (activeRiotId) {
