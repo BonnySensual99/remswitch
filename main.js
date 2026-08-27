@@ -26,7 +26,7 @@ const DEFAULT_SETTINGS = Object.freeze({
     autoLaunchGame: true,
     autoCloseRunningGames: true,
     autoSyncRank: true,
-    globalShortcut: 'CommandOrControl+Alt+R',
+    globalShortcut: 'Alt+R',
     closeOnLaunch: false,
     confirmSwitch: true,
     soundEnabled: true,
@@ -322,6 +322,7 @@ async function startAccountSwitch(accountId, requestId, targetGame = null) {
         if (!account) throw Object.assign(new Error('La cuenta ya no existe.'), { code: 'ACCOUNT_NOT_FOUND' });
         payloadBase.game = targetGame === 'none' ? 'riot' : (targetGame || account.game || 'valorant');
         const settings = normalizeSettings(store.loadSettings(), DEFAULT_SETTINGS);
+        if (settings.globalShortcut && (settings.globalShortcut.includes(" ") || settings.globalShortcut.includes("crControl"))) settings.globalShortcut = "Alt+R";
 
         emitSwitch({ ...payloadBase, state: 'CheckingRiotClient', message: 'Comprobando Riot Client�' });
         const runningGamesList = await getRunningProcessesAsync(GAME_PROCESSES);
@@ -897,6 +898,7 @@ function registerIpc() {
     handle('get-settings', () => normalizeSettings(store.loadSettings(), DEFAULT_SETTINGS));
     handle('save-settings', (rawSettings) => {
         const settings = normalizeSettings(rawSettings, DEFAULT_SETTINGS);
+    if (settings.globalShortcut && (settings.globalShortcut.includes(" ") || settings.globalShortcut.includes("crControl") || settings.globalShortcut.includes("CommandOc"))) settings.globalShortcut = "Alt+R";
         if (settings.customRiotPath) validateRiotExecutable(settings.customRiotPath, true);
         store.saveSettings(settings);
         updateGlobalShortcut(settings.globalShortcut);

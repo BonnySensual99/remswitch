@@ -1034,7 +1034,7 @@ async function refreshRuntimeStatus() {
 
 async function openSettings() {
     if (!rendererApi) {
-        settings ||= { startWithWindows: false, minimizeToTray: true, closeOnLaunch: false, confirmSwitch: true, autoLaunchGame: true, autoCloseRunningGames: true, autoSyncRank: true, globalShortcut: 'CommandOrControl+Alt+R', soundEnabled: true, reducedMotion: false, initialDelayMs: 1800, charDelayMs: 15, fieldDelayMs: 200, customRiotPath: '' };
+        settings ||= { startWithWindows: false, minimizeToTray: true, closeOnLaunch: false, confirmSwitch: true, autoLaunchGame: true, autoCloseRunningGames: true, autoSyncRank: true, globalShortcut: 'Alt+R', soundEnabled: true, reducedMotion: false, initialDelayMs: 1800, charDelayMs: 15, fieldDelayMs: 200, customRiotPath: '' };
         $('setStartWithWindows').checked = settings.startWithWindows;
         $('setMinimizeToTray').checked = settings.minimizeToTray;
         $('setCloseOnLaunch').checked = settings.closeOnLaunch;
@@ -1042,7 +1042,7 @@ async function openSettings() {
         $('setAutoLaunchGame').checked = settings.autoLaunchGame;
         $('setAutoCloseRunningGames').checked = settings.autoCloseRunningGames !== false;
         $('setAutoSyncRank').checked = settings.autoSyncRank !== false;
-        if($('btnGlobalShortcut')) { $('btnGlobalShortcut').innerHTML = formatShortcut(settings.globalShortcut || 'CommandOrControl+Alt+R'); }
+        if($('btnGlobalShortcut')) { $('btnGlobalShortcut').innerHTML = formatShortcut(settings.globalShortcut || 'Alt+R'); }
         $('setSoundEnabled').checked = settings.soundEnabled;
         $('setReducedMotion').checked = settings.reducedMotion;
         $('setInitialDelay').value = settings.initialDelayMs;
@@ -1064,7 +1064,7 @@ async function openSettings() {
         $('setAutoLaunchGame').checked = settings.autoLaunchGame;
         $('setAutoCloseRunningGames').checked = settings.autoCloseRunningGames !== false;
         $('setAutoSyncRank').checked = settings.autoSyncRank !== false;
-        if($('btnGlobalShortcut')) { $('btnGlobalShortcut').innerHTML = formatShortcut(settings.globalShortcut || 'CommandOrControl+Alt+R'); }
+        if($('btnGlobalShortcut')) { $('btnGlobalShortcut').innerHTML = formatShortcut(settings.globalShortcut || 'Alt+R'); }
         $('setSoundEnabled').checked = settings.soundEnabled;
         $('setReducedMotion').checked = settings.reducedMotion;
         $('setInitialDelay').value = settings.initialDelayMs;
