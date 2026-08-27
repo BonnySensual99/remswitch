@@ -1557,3 +1557,27 @@ initialize();
 
 
 
+const shortcutInput = setGlobalShortcut;
+if (shortcutInput) {
+    shortcutInput.addEventListener('keydown', (e) => {
+        e.preventDefault();
+        if (e.key === 'Backspace' || e.key === 'Delete') { e.target.value = ''; return; }
+        if (e.key === 'Escape') { e.target.blur(); return; }
+        let keys = [];
+        if (e.ctrlKey || e.metaKey) keys.push('CommandOrControl');
+        if (e.altKey) keys.push('Alt');
+        if (e.shiftKey) keys.push('Shift');
+        const forbiddenKeys = ['Control', 'Alt', 'Shift', 'Meta', 'Dead', 'CapsLock', 'Tab'];
+        if (!forbiddenKeys.includes(e.key)) {
+            let keyName = e.key.toUpperCase();
+            if (keyName === ' ') keyName = 'Space';
+            else if (keyName.length === 1 && keyName >= 'A' && keyName <= 'Z') keyName = keyName;
+            else if (keyName.length === 1 && keyName >= '0' && keyName <= '9') keyName = keyName;
+            else if (e.code.startsWith('Key')) keyName = e.code.replace('Key', '');
+            else if (e.code.startsWith('Digit')) keyName = e.code.replace('Digit', '');
+            else keyName = e.code;
+            keys.push(keyName);
+            e.target.value = keys.join('+');
+        }
+    });
+}
