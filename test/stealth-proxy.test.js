@@ -32,10 +32,10 @@ test('stealth-proxy: reescribe clientconfig JSON redirigiendo chat hacia localho
 
     assert.equal(upstreamHost, 'eu1.chat.si.riotgames.com');
     assert.equal(upstreamPort, 5223);
-    assert.equal(parsed['chat.host'], '127.0.0.1');
+    assert.equal(parsed['chat.host'], 'deceive-localhost.molenzwiebel.xyz');
     assert.equal(parsed['chat.port'], 55555);
     assert.equal(parsed['chat.allow_bad_cert.enabled'], true);
-    assert.equal(parsed['chat.affinities']['EU'], '127.0.0.1');
+    assert.equal(parsed['chat.affinities']['EU'], 'deceive-localhost.molenzwiebel.xyz');
 });
 
 test('stealth-proxy: inicia y detiene servidores locales HTTP y TLS', async () => {
