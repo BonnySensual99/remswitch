@@ -1,4 +1,4 @@
-﻿const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', Object.freeze({
     getAccounts: () => ipcRenderer.invoke('get-accounts'),
@@ -65,7 +65,15 @@ contextBridge.exposeInMainWorld('api', Object.freeze({
         const listener = (_event, payload) => callback(payload);
         ipcRenderer.on('switch-state', listener);
         return () => ipcRenderer.removeListener('switch-state', listener);
-    }
+    },
+
+    getDisplayState: () => ipcRenderer.invoke('display:get-state'),
+    setDisplayResolution: (payload) => ipcRenderer.invoke('display:set-resolution', payload),
+    setDisplayVibrance: (payload) => ipcRenderer.invoke('display:set-vibrance', payload),
+    applyDisplayProfile: (payload) => ipcRenderer.invoke('display:apply-profile', payload),
+    saveDisplayProfile: (profile) => ipcRenderer.invoke('display:save-profile', profile),
+    deleteDisplayProfile: (idOrName) => ipcRenderer.invoke('display:delete-profile', idOrName)
 }));
+
 
 

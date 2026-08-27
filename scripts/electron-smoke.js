@@ -19,6 +19,12 @@ async function main() {
     ipcMain.handle('get-app-version', () => '1.0.1');
     ipcMain.handle('get-settings', () => ({ startWithWindows: false, minimizeToTray: true, closeOnLaunch: false, confirmSwitch: true, autoLaunchGame: true, soundEnabled: false, reducedMotion: true, initialDelayMs: 1800, charDelayMs: 15, fieldDelayMs: 200, customRiotPath: '' }));
     ipcMain.handle('get-runtime-status', () => ({ riotClientFound: true, riotSignatureValid: true, activeSession: { riotId: 'Operador#EU', region: 'EU' }, runningGame: null, encryptionAvailable: true, activeRequestId: null }));
+    ipcMain.handle('display:get-state', () => ({ displays: [{ name: '\\\\.\\DISPLAY1', deviceString: 'NVIDIA GeForce RTX', isPrimary: true, currentMode: { width: 1920, height: 1080, frequency: 144 }, frequencies: [60, 144], currentVibrance: 50 }], profiles: [{ id: 'default-1', name: '1080p Nativa', width: 1920, height: 1080, frequency: 0, vibrance: 50, tag: '16:9' }], nvidiaReady: true }));
+    ipcMain.handle('display:set-resolution', () => ({ ok: true }));
+    ipcMain.handle('display:set-vibrance', () => ({ ok: true }));
+    ipcMain.handle('display:apply-profile', () => ({ ok: true }));
+    ipcMain.handle('display:save-profile', () => []);
+    ipcMain.handle('display:delete-profile', () => []);
     app.setPath('userData', path.join(app.getPath('temp'), 'remswitcher-electron-smoke'));
     await app.whenReady();
     windowRef = new BrowserWindow({
@@ -44,8 +50,8 @@ async function main() {
         accountCard: document.querySelector('.account-card') !== null,
         gameBadge: document.querySelector('.game-badge')?.textContent.includes('VALORANT'),
         currentBadge: document.querySelector('.current-badge')?.textContent === 'ACTIVA',
-        themePicker: document.getElementById('themePicker') !== null,
-        userPill: document.getElementById('userPill') !== null
+        userPill: document.getElementById('userPill') !== null,
+        navTabDisplay: document.getElementById('navTabDisplay') !== null
     })`);
     await windowRef.webContents.executeJavaScript("document.querySelector('[data-tab=\\\"accounts\\\"]').click()");
     const accountsView = await windowRef.webContents.executeJavaScript("({ view: document.body.dataset.view, title: document.getElementById('pageTitle')?.textContent })");
@@ -55,7 +61,7 @@ async function main() {
     const settingsModalOpen = await windowRef.webContents.executeJavaScript("document.getElementById('settingsModal').classList.contains('active')");
 
     if (consoleErrors.length) throw new Error(`Errores de consola: ${consoleErrors.join(' | ')}`);
-    if (!apiShape.hasApi || !apiShape.hasRendererApiCollision || !apiShape.addButton || !apiShape.accountCard || !apiShape.gameBadge || !apiShape.currentBadge || accountsView.view !== 'accounts' || !accountsView.title || !accountModalOpen || !settingsModalOpen) {
+    if (!apiShape.hasApi || !apiShape.hasRendererApiCollision || !apiShape.addButton || !apiShape.accountCard || !apiShape.gameBadge || !apiShape.currentBadge || !apiShape.userPill || !apiShape.navTabDisplay || accountsView.view !== 'accounts' || !accountsView.title || !accountModalOpen || !settingsModalOpen) {
         throw new Error('El smoke test no pudo accionar la precarga o los botones del renderer.');
     }
     console.log('Electron smoke: precarga y botones OK');

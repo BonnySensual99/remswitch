@@ -1,4 +1,4 @@
-﻿
+
 function formatShortcut(accelerator) {
     if (!accelerator) return '<span style="color:var(--muted)">Sin asignar</span>';
     const parts = accelerator.split('+');
@@ -799,11 +799,284 @@ function setActiveNav(tabName) {
 }
 
 function setView(view, focusSearch = false) {
-    currentView = 'accounts';
-    document.body.dataset.view = 'accounts';
-    setActiveNav('accounts');
-    if (focusSearch) requestAnimationFrame(() => elements.searchInput.focus());
-    renderAccounts();
+    currentView = view || 'accounts';
+    document.body.dataset.view = currentView;
+    setActiveNav(currentView);
+
+    const accountsView = $('accountsView');
+    const displayView = $('displayView');
+
+    if (currentView === 'display') {
+        if (accountsView) accountsView.classList.add('hidden');
+        if (displayView) displayView.classList.remove('hidden');
+        refreshDisplayState();
+    } else {
+        if (displayView) displayView.classList.add('hidden');
+        if (accountsView) accountsView.classList.remove('hidden');
+        if (focusSearch) requestAnimationFrame(() => elements.searchInput.focus());
+        renderAccounts();
+    }
+}
+
+let currentDisplayState = null;
+let selectedDisplayName = null;
+let displayProfiles = [];
+
+async function refreshDisplayState() {
+    if (!rendererApi || !rendererApi.getDisplayState) return;
+    try {
+        const state = await rendererApi.getDisplayState();
+        if (!state) return;
+        currentDisplayState = state;
+        displayProfiles = state.profiles || [];
+
+        const displays = state.displays || [];
+        const monitorSelect = $('displayMonitorSelect');
+
+        if (monitorSelect && displays.length > 0) {
+            const currentSelected = selectedDisplayName || (displays.find((d) => d.isPrimary)?.name || displays[0]?.name || '');
+            selectedDisplayName = currentSelected;
+
+            monitorSelect.textContent = '';
+            displays.forEach((disp) => {
+                const opt = document.createElement('option');
+                opt.value = disp.name;
+                const label = `${disp.deviceString || disp.name} (${disp.currentMode.width}x${disp.currentMode.height} @ ${disp.currentMode.frequency}Hz)${disp.isPrimary ? ' ★ Principal' : ''}`;
+                opt.textContent = label;
+                if (disp.name === currentSelected) opt.selected = true;
+                monitorSelect.appendChild(opt);
+            });
+        }
+
+        const activeDisplay = displays.find((d) => d.name === selectedDisplayName) || displays[0];
+
+        const freqSelect = $('selectDisplayFrequency');
+        if (freqSelect && activeDisplay && activeDisplay.frequencies) {
+            const currentVal = freqSelect.value;
+            freqSelect.textContent = '';
+            const autoOpt = document.createElement('option');
+            autoOpt.value = '0';
+            autoOpt.textContent = 'Automático / Máximo';
+            freqSelect.appendChild(autoOpt);
+
+            activeDisplay.frequencies.forEach((hz) => {
+                const opt = document.createElement('option');
+                opt.value = String(hz);
+                opt.textContent = `${hz} Hz`;
+                freqSelect.appendChild(opt);
+            });
+            freqSelect.value = currentVal || '0';
+        }
+
+        if (activeDisplay) {
+            const modeBadge = $('displayCurrentModeBadge');
+            if (modeBadge) {
+                modeBadge.innerHTML = `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M20 3H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h7v2H8v2h8v-2h-3v-2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 13H4V5h16v11z"/></svg> <span>${activeDisplay.currentMode.width} × ${activeDisplay.currentMode.height} @ ${activeDisplay.currentMode.frequency} Hz</span>`;
+            }
+
+            const vibBadge = $('displayVibranceBadge');
+            const vibSlider = $('displayVibranceSlider');
+            const vibVal = $('displayVibranceValue');
+
+            if (typeof activeDisplay.currentVibrance === 'number') {
+                if (vibBadge) vibBadge.innerHTML = `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8z"/></svg> <span>Vibrance: ${activeDisplay.currentVibrance}%</span>`;
+                if (vibSlider) vibSlider.value = activeDisplay.currentVibrance;
+                if (vibVal) vibVal.textContent = `${activeDisplay.currentVibrance}%`;
+                updateVibranceActiveButtons(activeDisplay.currentVibrance);
+            } else {
+                if (vibBadge) vibBadge.textContent = state.nvidiaReady ? 'Vibrance: Desconocido' : 'Vibrance: No NVIDIA';
+            }
+
+            const gpuBadge = $('displayGpuBadge');
+            if (gpuBadge) {
+                if (state.nvidiaReady) {
+                    gpuBadge.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> <span>NVIDIA NVAPI Conectado</span>';
+                    gpuBadge.className = 'status-pill-badge gpu';
+                } else {
+                    gpuBadge.textContent = 'Controlador estándar';
+                    gpuBadge.className = 'status-pill-badge neutral';
+                }
+            }
+        }
+
+        renderDisplayProfiles();
+    } catch (err) {
+        console.error('Error refreshing display state:', err);
+    }
+}
+
+function updateVibranceActiveButtons(pct) {
+    document.querySelectorAll('.btn-vib').forEach((btn) => {
+        const val = parseInt(btn.dataset.vibrance, 10);
+        btn.classList.toggle('active', val === pct);
+    });
+}
+
+function renderDisplayProfiles() {
+    const list = $('displayProfilesList');
+    if (!list) return;
+
+    list.textContent = '';
+
+    const activeDisplay = currentDisplayState?.displays?.find((d) => d.name === selectedDisplayName) || currentDisplayState?.displays?.[0];
+    const curW = activeDisplay?.currentMode?.width;
+    const curH = activeDisplay?.currentMode?.height;
+
+    displayProfiles.forEach((profile) => {
+        const card = document.createElement('div');
+        const isActive = curW === profile.width && curH === profile.height;
+        card.className = `display-profile-card${isActive ? ' active' : ''}`;
+
+        const cardTop = document.createElement('div');
+        cardTop.className = 'card-top';
+
+        const titleGroup = document.createElement('div');
+        titleGroup.className = 'card-title-group';
+
+        const name = document.createElement('h3');
+        name.className = 'profile-name';
+        name.textContent = profile.name;
+        titleGroup.appendChild(name);
+
+        if (isActive) {
+            const activePill = document.createElement('span');
+            activePill.className = 'active-pill';
+            activePill.innerHTML = '<span class="pulse-dot"></span> EN USO';
+            titleGroup.appendChild(activePill);
+        }
+
+        const tag = document.createElement('span');
+        const tagText = profile.tag || (profile.width === 1920 && profile.height === 1080 ? '16:9' : 'Stretched');
+        tag.textContent = tagText;
+        let tagClass = 'tag-stretched';
+        if (tagText.includes('16:9')) tagClass = 'tag-16-9';
+        else if (tagText.includes('4:3')) tagClass = 'tag-4-3';
+        else if (tagText.includes('5:4')) tagClass = 'tag-5-4';
+        tag.className = `profile-tag ${tagClass}`;
+
+        cardTop.appendChild(titleGroup);
+        cardTop.appendChild(tag);
+
+        const dimBox = document.createElement('div');
+        dimBox.className = 'res-dimensions';
+        dimBox.innerHTML = `${profile.width} <span class="res-x">×</span> ${profile.height}`;
+
+        const specs = document.createElement('div');
+        specs.className = 'res-spec-badges';
+
+        const hzPill = document.createElement('span');
+        hzPill.className = 'spec-pill';
+        hzPill.innerHTML = `<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M7 2v11h3v9l7-12h-4l3-8z"/></svg> ${profile.frequency > 0 ? `${profile.frequency} Hz` : 'Hz Máximos'}`;
+
+        const vibPill = document.createElement('span');
+        vibPill.className = 'spec-pill';
+        vibPill.innerHTML = `<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8z"/></svg> ${typeof profile.vibrance === 'number' ? `${profile.vibrance}% Vibrance` : 'Vibrance actual'}`;
+
+        specs.appendChild(hzPill);
+        specs.appendChild(vibPill);
+
+        const actions = document.createElement('div');
+        actions.className = 'card-actions';
+
+        const applyBtn = document.createElement('button');
+        applyBtn.type = 'button';
+        applyBtn.className = `btn ${isActive ? 'secondary' : 'primary'} small btn-apply-res`;
+        applyBtn.innerHTML = isActive
+            ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> Reaplicar'
+            : '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Aplicar';
+        applyBtn.addEventListener('click', async () => {
+            applyBtn.disabled = true;
+            applyBtn.textContent = 'Aplicando...';
+            try {
+                const res = await rendererApi.applyDisplayProfile({
+                    displayName: selectedDisplayName,
+                    profile
+                });
+                if (res && res.ok) {
+                    showToast(res.message || `Resolución ${profile.width}x${profile.height} aplicada`);
+                    playSound();
+                } else {
+                    showToast(`Error: ${res?.error || 'No se pudo aplicar la resolución'}`);
+                }
+            } catch (e) {
+                showToast(`Error: ${e.message}`);
+            } finally {
+                await refreshDisplayState();
+            }
+        });
+
+        const editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'card-action edit';
+        editBtn.setAttribute('aria-label', `Editar perfil ${profile.name}`);
+        editBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" width="15" height="15" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+        editBtn.addEventListener('click', () => {
+            openDisplayProfileModal(profile);
+        });
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'card-action delete';
+        deleteBtn.setAttribute('aria-label', `Eliminar perfil ${profile.name}`);
+        deleteBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+        deleteBtn.addEventListener('click', async () => {
+            const confirmed = await requestConfirmation({
+                title: 'Eliminar resolución',
+                message: `¿Seguro que quieres eliminar el perfil "${profile.name}"?`,
+                acceptText: 'Eliminar'
+            });
+            if (confirmed) {
+                const updated = await rendererApi.deleteDisplayProfile(profile.id || profile.name);
+                displayProfiles = updated;
+                showToast('Perfil de resolución eliminado');
+                renderDisplayProfiles();
+            }
+        });
+
+        actions.appendChild(applyBtn);
+        actions.appendChild(editBtn);
+        actions.appendChild(deleteBtn);
+
+        card.appendChild(cardTop);
+        card.appendChild(dimBox);
+        card.appendChild(specs);
+        card.appendChild(actions);
+
+        list.appendChild(card);
+    });
+
+    const addCard = document.createElement('button');
+    addCard.type = 'button';
+    addCard.className = 'display-add-card';
+    addCard.innerHTML = `
+        <div class="add-card-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        </div>
+        <strong>Añadir resolución</strong>
+        <span>Personaliza ancho, alto, Hz y vibrance</span>
+    `;
+    addCard.addEventListener('click', () => openDisplayProfileModal());
+    list.appendChild(addCard);
+}
+
+function openDisplayProfileModal(profile = null) {
+    const form = $('displayProfileForm');
+    if (form) form.reset();
+
+    const activeDisplay = currentDisplayState?.displays?.find((d) => d.name === selectedDisplayName) || currentDisplayState?.displays?.[0];
+    const defaultVibrance = typeof activeDisplay?.currentVibrance === 'number' ? activeDisplay.currentVibrance : 80;
+
+    $('inputDisplayProfileId').value = profile?.id || '';
+    $('inputDisplayProfileName').value = profile?.name || '';
+    $('inputDisplayWidth').value = profile?.width || '1920';
+    $('inputDisplayHeight').value = profile?.height || '1080';
+    $('selectDisplayFrequency').value = profile?.frequency ? String(profile.frequency) : '0';
+    $('inputDisplayVibrance').value = typeof profile?.vibrance === 'number' ? profile.vibrance : (profile ? '' : defaultVibrance);
+    $('inputDisplayTag').value = profile?.tag || 'Stretched';
+    $('displayProfileModalTitle').textContent = profile ? 'Editar resolución y vibrance' : 'Añadir resolución';
+    $('btnSaveDisplayProfile').textContent = profile ? 'Guardar cambios' : 'Guardar resolución';
+
+    showModal($('displayProfileModal'));
 }
 
 function openAccountModal(account = null) {
@@ -821,7 +1094,7 @@ function openAccountModal(account = null) {
     $('accPassword').placeholder = account ? 'Dejar en blanco para conservar' : 'Protegida con DPAPI';
     $('modalTitle').textContent = account ? 'Editar cuenta' : 'Añadir cuenta';
     const banner = $('autofillBanner');
-    if (banner) banner.style.display = account ? 'none' : 'flex';
+    if (banner) banner.classList.toggle('hidden', Boolean(account));
 
     // Populate profile selector
     const profileSelect = $('accProfile');
@@ -1401,9 +1674,137 @@ function bindEvents() {
         playSound();
     });
 
+    // RemDisplay Event Listeners
+    $('btnRefreshDisplay')?.addEventListener('click', () => {
+        refreshDisplayState();
+        playSound();
+        showToast('Configuración de pantalla actualizada');
+    });
 
+    $('btnAddDisplayProfile')?.addEventListener('click', () => openDisplayProfileModal());
+    $('btnCloseDisplayProfileModal')?.addEventListener('click', () => hideModal($('displayProfileModal')));
+    $('btnCancelDisplayProfile')?.addEventListener('click', () => hideModal($('displayProfileModal')));
 
-    $('btnDismissBanner').addEventListener('click', () => $('updateBanner').classList.add('hidden'));
+    $('displayMonitorSelect')?.addEventListener('change', (e) => {
+        selectedDisplayName = e.target.value;
+        refreshDisplayState();
+    });
+
+    $('displayVibranceSlider')?.addEventListener('input', (e) => {
+        const pct = parseInt(e.target.value, 10);
+        const valBadge = $('displayVibranceValue');
+        if (valBadge) valBadge.textContent = `${pct}%`;
+        updateVibranceActiveButtons(pct);
+    });
+
+    $('displayVibranceSlider')?.addEventListener('change', async (e) => {
+        const pct = parseInt(e.target.value, 10);
+        try {
+            await rendererApi.setDisplayVibrance({ displayName: selectedDisplayName, percentage: pct });
+            showToast(`Digital Vibrance ajustado a ${pct}%`);
+            playSound();
+            refreshDisplayState();
+        } catch (err) {
+            showToast(`Error: ${err.message}`);
+        }
+    });
+
+    document.querySelectorAll('.btn-vib').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+            const pct = parseInt(btn.dataset.vibrance, 10);
+            const slider = $('displayVibranceSlider');
+            const valBadge = $('displayVibranceValue');
+            if (slider) slider.value = pct;
+            if (valBadge) valBadge.textContent = `${pct}%`;
+            try {
+                await rendererApi.setDisplayVibrance({ displayName: selectedDisplayName, percentage: pct });
+                showToast(`Digital Vibrance ajustado a ${pct}%`);
+                playSound();
+                refreshDisplayState();
+            } catch (err) {
+                showToast(`Error: ${err.message}`);
+            }
+        });
+    });
+
+    $('quickResChips')?.addEventListener('click', (e) => {
+        const chip = e.target.closest('.chip-btn');
+        if (!chip) return;
+        $('inputDisplayWidth').value = chip.dataset.w;
+        $('inputDisplayHeight').value = chip.dataset.h;
+        $('inputDisplayTag').value = chip.dataset.tag || 'Stretched';
+    });
+
+    $('quickVibChips')?.addEventListener('click', (e) => {
+        const chip = e.target.closest('.chip-btn');
+        if (!chip) return;
+        $('inputDisplayVibrance').value = chip.dataset.vib;
+    });
+
+    $('displayProfileForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = $('inputDisplayProfileId').value || undefined;
+        const name = $('inputDisplayProfileName').value.trim();
+        const width = parseInt($('inputDisplayWidth').value, 10);
+        const height = parseInt($('inputDisplayHeight').value, 10);
+        const frequency = parseInt($('selectDisplayFrequency').value, 10) || 0;
+        const vibVal = $('inputDisplayVibrance').value;
+        const vibrance = vibVal !== '' ? parseInt(vibVal, 10) : undefined;
+        const tag = $('inputDisplayTag').value.trim() || undefined;
+
+        try {
+            const updated = await rendererApi.saveDisplayProfile({ id, name, width, height, frequency, vibrance, tag });
+            displayProfiles = updated;
+            hideModal($('displayProfileModal'));
+            showToast('Perfil de resolución guardado');
+            playSound();
+            renderDisplayProfiles();
+        } catch (err) {
+            showToast(`Error al guardar: ${err.message}`);
+        }
+    });
+
+    let recordingShortcut = false;
+    $('btnGlobalShortcut')?.addEventListener('click', () => {
+        const btn = $('btnGlobalShortcut');
+        if (recordingShortcut) return;
+        recordingShortcut = true;
+        btn.textContent = 'Pulsa teclas...';
+        btn.classList.add('recording');
+
+        const onKeyDown = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.key === 'Escape') {
+                recordingShortcut = false;
+                btn.classList.remove('recording');
+                btn.innerHTML = formatShortcut(settings.globalShortcut || 'Alt+R');
+                window.removeEventListener('keydown', onKeyDown, true);
+                return;
+            }
+            let keys = [];
+            if (e.ctrlKey || e.metaKey) keys.push('CommandOrControl');
+            if (e.altKey) keys.push('Alt');
+            if (e.shiftKey) keys.push('Shift');
+            const forbiddenKeys = ['Control', 'Alt', 'Shift', 'Meta', 'Dead', 'CapsLock', 'Tab'];
+            if (!forbiddenKeys.includes(e.key)) {
+                let keyName = e.key.toUpperCase();
+                if (keyName === ' ') keyName = 'Space';
+                else if (e.code.startsWith('Key')) keyName = e.code.replace('Key', '');
+                else if (e.code.startsWith('Digit')) keyName = e.code.replace('Digit', '');
+                keys.push(keyName);
+                const combo = keys.join('+');
+                settings.globalShortcut = combo;
+                btn.innerHTML = formatShortcut(combo);
+                recordingShortcut = false;
+                btn.classList.remove('recording');
+                window.removeEventListener('keydown', onKeyDown, true);
+            }
+        };
+        window.addEventListener('keydown', onKeyDown, true);
+    });
+
+    $('btnDismissBanner')?.addEventListener('click', () => $('updateBanner').classList.add('hidden'));
     $('btnBannerUpdate').addEventListener('click', () => {
         if (!$('btnInstallUpdate').classList.contains('hidden')) {
             installUpdate();
@@ -1565,37 +1966,3 @@ async function initialize() {
 }
 
 initialize();
-
-
-
-
-
-
-
-const shortcutInput = setGlobalShortcut;
-if (shortcutInput) {
-    shortcutInput.addEventListener('keydown', (e) => {
-        e.preventDefault();
-        if (e.key === 'Backspace' || e.key === 'Delete') { e.target.value = ''; return; }
-        if (e.key === 'Escape') { e.target.blur(); return; }
-        let keys = [];
-        if (e.ctrlKey || e.metaKey) keys.push('CommandOrControl');
-        if (e.altKey) keys.push('Alt');
-        if (e.shiftKey) keys.push('Shift');
-        const forbiddenKeys = ['Control', 'Alt', 'Shift', 'Meta', 'Dead', 'CapsLock', 'Tab'];
-        if (!forbiddenKeys.includes(e.key)) {
-            let keyName = e.key.toUpperCase();
-            if (keyName === ' ') keyName = 'Space';
-            else if (keyName.length === 1 && keyName >= 'A' && keyName <= 'Z') keyName = keyName;
-            else if (keyName.length === 1 && keyName >= '0' && keyName <= '9') keyName = keyName;
-            else if (e.code.startsWith('Key')) keyName = e.code.replace('Key', '');
-            else if (e.code.startsWith('Digit')) keyName = e.code.replace('Digit', '');
-            else keyName = e.code;
-            keys.push(keyName);
-            e.target.value = keys.join('+');
-        }
-    });
-}
-
-
-

@@ -52,4 +52,13 @@ if (-not $crtDir) { throw 'No se encontró el runtime x64 de Visual C++.' }
 Copy-Item -LiteralPath (Join-Path $crtDir 'vcruntime140.dll') -Destination $stageDir
 Copy-Item -LiteralPath (Join-Path $crtDir 'vcruntime140_1.dll') -Destination $stageDir
 
+$cscPath = 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+if (Test-Path -LiteralPath $cscPath) {
+    $displaySrc = Join-Path $projectRoot 'src\RemDisplayBridge.cs'
+    $displayOut = Join-Path $stageDir 'RemDisplayBridge.exe'
+    & $cscPath /target:exe /platform:x64 /optimize+ "/out:$displayOut" $displaySrc
+    if ($LASTEXITCODE -ne 0) { throw 'No se pudo compilar RemDisplayBridge.' }
+    Write-Host "RemDisplayBridge compilado en $displayOut"
+}
+
 Write-Host "Puente nativo preparado en $stageDir"

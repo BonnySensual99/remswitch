@@ -1,4 +1,4 @@
-﻿const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, safeStorage, session, globalShortcut } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, safeStorage, session, globalShortcut } = require('electron');
 app.disableHardwareAcceleration();
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
@@ -14,6 +14,7 @@ const { runBridge } = require('./lib/bridge-runner');
 const { OperationGate } = require('./lib/operation-gate');
 const { launchDetached } = require('./lib/process-launcher');
 const { queryRiotSession, queryLiveRankAndStats, logoutRiotSession } = require('./lib/riot-session');
+const displayManager = require('./lib/display-manager');
 
 const APP_DATA_DIR = path.join(process.env.LOCALAPPDATA || app.getPath('appData'), 'RemSwitcher');
 const LEGACY_DATA_DIR = path.join(process.env.LOCALAPPDATA || app.getPath('appData'), 'ValorantAccountManager');
@@ -786,6 +787,12 @@ function registerPackagedSmokeIpc() {
         encryptionAvailable: true,
         activeRequestId: null
     }));
+    ipcMain.handle('display:get-state', () => ({ displays: [{ name: '\\\\.\\DISPLAY1', deviceString: 'NVIDIA GeForce RTX', isPrimary: true, currentMode: { width: 1920, height: 1080, frequency: 144 }, frequencies: [60, 144], currentVibrance: 50 }], profiles: [{ id: 'default-1', name: '1080p Nativa', width: 1920, height: 1080, frequency: 0, vibrance: 50, tag: '16:9' }], nvidiaReady: true }));
+    ipcMain.handle('display:set-resolution', () => ({ ok: true }));
+    ipcMain.handle('display:set-vibrance', () => ({ ok: true }));
+    ipcMain.handle('display:apply-profile', () => ({ ok: true }));
+    ipcMain.handle('display:save-profile', () => []);
+    ipcMain.handle('display:delete-profile', () => []);
 }
 
 async function runPackagedSmoke() {
@@ -801,10 +808,10 @@ async function runPackagedSmoke() {
         hasRendererApiCollision: typeof window.rendererApi !== 'object',
         addButton: document.getElementById('btnAdd') !== null,
         settingsButton: document.querySelector('[data-tab="settings"]') !== null,
+        navTabDisplay: document.getElementById('navTabDisplay') !== null,
         accountCard: document.querySelector('.account-card') !== null,
         gameBadge: document.querySelector('.game-badge')?.textContent.includes('VALORANT'),
         currentBadge: document.querySelector('.current-badge')?.textContent === 'ACTIVA',
-        themePicker: document.getElementById('themePicker') !== null,
         userPill: document.getElementById('userPill') !== null
     })`);
     await mainWindow.webContents.executeJavaScript('document.querySelector("[data-tab=\\"accounts\\"]").click()');
@@ -814,7 +821,7 @@ async function runPackagedSmoke() {
     await mainWindow.webContents.executeJavaScript('document.getElementById("btnCloseAccountModal").click(); document.querySelector("[data-tab=\\"settings\\"]").click()');
     const settingsModalOpen = await mainWindow.webContents.executeJavaScript('document.getElementById("settingsModal").classList.contains("active")');
     if (consoleErrors.length) throw new Error(`Errores de consola: ${consoleErrors.join(' | ')}`);
-    if (!result.hasApi || !result.hasRendererApiCollision || !result.addButton || !result.settingsButton || !result.accountCard || !result.gameBadge || !result.currentBadge || accountsView.view !== 'accounts' || !accountsView.title || !accountModalOpen || !settingsModalOpen) {
+    if (!result.hasApi || !result.hasRendererApiCollision || !result.addButton || !result.settingsButton || !result.navTabDisplay || !result.accountCard || !result.gameBadge || !result.currentBadge || !result.userPill || accountsView.view !== 'accounts' || !accountsView.title || !accountModalOpen || !settingsModalOpen) {
         throw new Error('El smoke empaquetado no pudo accionar la precarga o los botones del renderer.');
     }
     console.log('Packaged smoke: precarga y botones OK');
@@ -1034,6 +1041,13 @@ function registerIpc() {
         autoUpdater.quitAndInstall(false, true);
         return { scheduled: true };
     });
+
+    handle('display:get-state', () => displayManager.getDisplayState());
+    handle('display:set-resolution', (payload) => displayManager.setResolution(payload?.displayName, payload?.width, payload?.height, payload?.frequency));
+    handle('display:set-vibrance', (payload) => displayManager.setVibrance(payload?.displayName, payload?.percentage));
+    handle('display:apply-profile', (payload) => displayManager.applyProfile(payload?.displayName, payload?.profile));
+    handle('display:save-profile', (profile) => displayManager.saveProfile(profile));
+    handle('display:delete-profile', (idOrName) => displayManager.deleteProfile(idOrName));
 
     ipcMain.on('window-minimize', (event) => { assertTrustedSender(event); mainWindow?.minimize(); });
     ipcMain.on('window-close', (event) => { assertTrustedSender(event); mainWindow?.close(); });
