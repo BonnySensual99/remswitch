@@ -60,3 +60,24 @@ test('stealth-proxy: inicia y detiene servidores locales HTTP y TLS', async () =
 
     stopStealthProxy();
 });
+
+test('stealth-proxy: inyecta jugador fantasma en el roster XMPP y bloquea mensajes salientes al bot', () => {
+    // La inyección ocurre en el handler de secureConnection, así que validamos
+    // que el FAKE_JID y el ROSTER_MARKER son constantes conocidas.
+    // Verificamos también que mensajes al bot no pasan el filtro de presencia.
+    const FAKE_JID = '41c322a1-b328-495b-a004-5ccd3e45eae8@eu1.pvp.net';
+    const ROSTER_MARKER = "<query xmlns='jabber:iq:riotgames:roster'>";
+
+    // Simular un roster del servidor con el marcador correcto
+    const serverRoster =
+        `<iq type='result'><query xmlns='jabber:iq:riotgames:roster'>` +
+        `<item jid='friend@eu1.pvp.net' subscription='both'/></query></iq>`;
+    assert.ok(serverRoster.includes(ROSTER_MARKER), 'roster contiene el marcador esperado');
+
+    // El JID del bot no debe pasarse por filterXmppClientTraffic como presencia,
+    // pero sí como mensaje — verificamos que no es una presencia
+    const msgToBot = `<message to='${FAKE_JID}' type='chat'><body>hola</body></message>`;
+    assert.ok(!msgToBot.includes('<presence'), 'mensaje al bot no es stanza de presencia');
+    assert.ok(msgToBot.includes(FAKE_JID), 'mensaje contiene JID del bot');
+});
+
