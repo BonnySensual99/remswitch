@@ -1,6 +1,5 @@
-
 function formatShortcut(accelerator) {
-    if (!accelerator) return '<span style="color:var(--muted)">Sin asignar</span>';
+    if (!accelerator) return '<span class="text-muted">Sin asignar</span>';
     const parts = accelerator.split('+');
     return parts.map(p => {
         if (p === 'CommandOrControl') return '<kbd>Ctrl</kbd>';

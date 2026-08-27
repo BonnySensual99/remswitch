@@ -815,7 +815,8 @@ function registerPackagedSmokeIpc() {
     ipcMain.handle('display:set-vibrance', () => ({ ok: true }));
     ipcMain.handle('display:apply-profile', () => ({ ok: true }));
     ipcMain.handle('display:save-profile', () => []);
-    ipcMain.handle('display:delete-profile', () => []);
+    ipcMain.handle('get-deceive-status', () => ({ installed: true, path: 'C:\\test\\Deceive.exe' }));
+    ipcMain.handle('download-deceive', () => ({ ok: true, path: 'C:\\test\\Deceive.exe' }));
 }
 
 async function runPackagedSmoke() {

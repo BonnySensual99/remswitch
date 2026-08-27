@@ -24,7 +24,8 @@ async function main() {
     ipcMain.handle('display:set-vibrance', () => ({ ok: true }));
     ipcMain.handle('display:apply-profile', () => ({ ok: true }));
     ipcMain.handle('display:save-profile', () => []);
-    ipcMain.handle('display:delete-profile', () => []);
+    ipcMain.handle('get-deceive-status', () => ({ installed: true, path: 'C:\\test\\Deceive.exe' }));
+    ipcMain.handle('download-deceive', () => ({ ok: true, path: 'C:\\test\\Deceive.exe' }));
     app.setPath('userData', path.join(app.getPath('temp'), 'remswitcher-electron-smoke'));
     await app.whenReady();
     windowRef = new BrowserWindow({
