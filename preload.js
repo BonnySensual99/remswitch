@@ -15,7 +15,8 @@ contextBridge.exposeInMainWorld('api', Object.freeze({
     importActiveSession: () => ipcRenderer.invoke('import-active-session'),
     forceCloseGames: () => ipcRenderer.invoke('force-close-games'),
     syncLiveRank: () => ipcRenderer.invoke('sync-live-rank'),
-    startPlay: (accountId, targetGame) => ipcRenderer.invoke('start-play', { accountId, targetGame }),`n    cancelSwitch: () => ipcRenderer.invoke('cancel-switch'),
+    startPlay: (accountId, targetGame) => ipcRenderer.invoke('start-play', { accountId, targetGame }),
+    cancelSwitch: () => ipcRenderer.invoke('cancel-switch'),
 
     getActivityLog: () => ipcRenderer.invoke('get-activity-log'),
     getUserProfile: () => ipcRenderer.invoke('get-user-profile'),
@@ -66,4 +67,5 @@ contextBridge.exposeInMainWorld('api', Object.freeze({
         return () => ipcRenderer.removeListener('switch-state', listener);
     }
 }));
+
 

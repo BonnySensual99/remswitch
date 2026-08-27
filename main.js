@@ -289,7 +289,13 @@ function emitSwitch(payload) {
 async function waitForAuthenticatedSession(account, payloadBase) {
     const deadline = Date.now() + 90000;
     emitSwitch({ ...payloadBase, state: 'WaitingForAuthentication', message: 'Esperando confirmación de Riot. Completa el MFA si aparece.' });
-    while (Date.now() < deadline) {`n        if (operationGate.activeRequestId !== payloadBase.requestId) {`n            const error = new Error('Operación cancelada por el usuario.');`n            error.code = 'CANCELLED';`n            error.uiState = 'Cancelled';`n            throw error;`n        }
+    while (Date.now() < deadline) {
+        if (operationGate.activeRequestId !== payloadBase.requestId) {
+            const error = new Error('Operación cancelada por el usuario.');
+            error.code = 'CANCELLED';
+            error.uiState = 'Cancelled';
+            throw error;
+        }
         const sessionInfo = await queryRiotSession();
         if (sessionInfo) {
             if (account.riotId && sessionInfo.riotId.toLowerCase() !== account.riotId.toLowerCase()) {
@@ -954,7 +960,15 @@ function registerIpc() {
         const result = await syncAccountsWithLiveRank();
         return result || { synced: false };
     });
-    handle('cancel-switch', () => {`n        if (operationGate.activeRequestId) {`n            operationGate.end(operationGate.activeRequestId);`n            updateTrayMenu();`n            return { cancelled: true };`n        }`n        return { cancelled: false };`n    });`n    handle('start-play', ({ accountId, targetGame } = {}) => {
+    handle('cancel-switch', () => {
+        if (operationGate.activeRequestId) {
+            operationGate.end(operationGate.activeRequestId);
+            updateTrayMenu();
+            return { cancelled: true };
+        }
+        return { cancelled: false };
+    });
+    handle('start-play', ({ accountId, targetGame } = {}) => {
         const id = String(accountId || '');
         if (!id) throw new Error('Cuenta no válida.');
         const requestId = crypto.randomUUID();

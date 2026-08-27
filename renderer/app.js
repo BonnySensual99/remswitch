@@ -988,7 +988,9 @@ function updateSwitchState(payload) {
     if (TERMINAL_SWITCH_STATES.has(state)) {
         panel.classList.remove('error', 'manual', 'waiting', 'done');
         panel.classList.add(state === 'Done' ? 'done' : ['ManualActionRequired', 'Timeout'].includes(state) ? 'manual' : 'error');
-        $('btnCloseSwitch').classList.remove('hidden');`n        } else if (state === 'WaitingForAuthentication') {`n            $('btnCancelSwitch').classList.remove('hidden');
+        $('btnCloseSwitch').classList.remove('hidden');
+        } else if (state === 'WaitingForAuthentication') {
+            $('btnCancelSwitch').classList.remove('hidden');
         if (state === 'WrongPassword' || state === 'Timeout' || state === 'Error') $('btnRetrySwitch').classList.remove('hidden');
         if (payload.errorCode === 'GAME_RUNNING') {
             $('btnForceCloseGame').classList.remove('hidden');
@@ -1269,7 +1271,8 @@ function bindEvents() {
     $('btnCloseProfileModal').addEventListener('click', () => hideModal(elements.profileModal));
     $('btnConfirmCancel').addEventListener('click', () => settleConfirmation(false));
     $('btnConfirmAccept').addEventListener('click', () => settleConfirmation(true));
-    $('btnCloseSwitch').addEventListener('click', closeSwitchOverlay);`n    $('btnCancelSwitch').addEventListener('click', () => { rendererApi.cancelSwitch?.(); closeSwitchOverlay(); });
+    $('btnCloseSwitch').addEventListener('click', closeSwitchOverlay);
+    $('btnCancelSwitch').addEventListener('click', () => { rendererApi.cancelSwitch?.(); closeSwitchOverlay(); });
     $('btnRetrySwitch').addEventListener('click', () => {
         if (!lastSwitchAccount) return;
         closeSwitchOverlay();
