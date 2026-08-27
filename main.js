@@ -15,6 +15,13 @@ const { OperationGate } = require('./lib/operation-gate');
 const { launchDetached } = require('./lib/process-launcher');
 const { queryRiotSession, queryLiveRankAndStats, logoutRiotSession } = require('./lib/riot-session');
 const displayManager = require('./lib/display-manager');
+const {
+    isDeceiveInstalled,
+    resolveDeceivePath,
+    downloadDeceive,
+    launchDeceiveGame,
+    terminateDeceive
+} = require('./lib/deceive-manager');
 
 const APP_DATA_DIR = path.join(process.env.LOCALAPPDATA || app.getPath('appData'), 'RemSwitcher');
 const LEGACY_DATA_DIR = path.join(process.env.LOCALAPPDATA || app.getPath('appData'), 'ValorantAccountManager');
@@ -35,7 +42,8 @@ const DEFAULT_SETTINGS = Object.freeze({
     initialDelayMs: 1800,
     charDelayMs: 15,
     fieldDelayMs: 200,
-    customRiotPath: ''
+    customRiotPath: '',
+    customDeceivePath: ''
 });
 
 const GAME_ARGS = Object.freeze({
@@ -48,7 +56,8 @@ const GAME_PROCESSES = Object.freeze([
     'VALORANT-Win64-Shipping.exe',
     'LeagueClient.exe',
     'LeagueClientUx.exe',
-    'League of Legends.exe'
+    'League of Legends.exe',
+    'Deceive.exe'
 ]);
 
 const RIOT_PROCESSES = Object.freeze(['RiotClientServices.exe', 'Riot Client.exe', 'RiotClientUx.exe']);
@@ -317,12 +326,12 @@ function getSwitchErrorState(error) {
     if (error?.uiState) return error.uiState;
     if (error?.code === 'PASSWORD_INCORRECT') return 'WrongPassword';
     if (['BRIDGE_TIMEOUT', 'AUTH_TIMEOUT'].includes(error?.code)) return 'Timeout';
-    if (['RIOT_LOGOUT_FAILED', 'RIOT_NOT_FOUND', 'RIOT_SIGNATURE_INVALID', 'BRIDGE_MISSING', 'NO_LOGIN_WINDOW'].includes(error?.code)) return 'ManualActionRequired';
+    if (['RIOT_LOGOUT_FAILED', 'RIOT_NOT_FOUND', 'RIOT_SIGNATURE_INVALID', 'BRIDGE_MISSING', 'NO_LOGIN_WINDOW', 'DECEIVE_NOT_FOUND', 'DECEIVE_DOWNLOAD_FAILED'].includes(error?.code)) return 'ManualActionRequired';
     return 'Error';
 }
 
-async function startAccountSwitch(accountId, requestId, targetGame = null) {
-    const payloadBase = { requestId, accountId };
+async function startAccountSwitch(accountId, requestId, targetGame = null, launchOffline = false) {
+    const payloadBase = { requestId, accountId, launchOffline: Boolean(launchOffline) };
     try {
         const accounts = store.loadAccounts();
         const account = accounts.find((item) => item.id === accountId);
@@ -331,7 +340,7 @@ async function startAccountSwitch(accountId, requestId, targetGame = null) {
         const settings = normalizeSettings(store.loadSettings(), DEFAULT_SETTINGS);
         if (settings.globalShortcut && (settings.globalShortcut.includes(" ") || settings.globalShortcut.includes("crControl"))) settings.globalShortcut = "Alt+R";
 
-        emitSwitch({ ...payloadBase, state: 'CheckingRiotClient', message: 'Comprobando Riot Client...' });
+        emitSwitch({ ...payloadBase, state: 'CheckingRiotClient', message: launchOffline ? 'Preparando Modo Incógnito (Deceive)...' : 'Comprobando Riot Client...' });
         const runningGamesList = await getRunningProcessesAsync(GAME_PROCESSES);
         const runningGame = runningGamesList.length > 0 ? runningGamesList[0] : undefined;
         if (runningGame) {
@@ -352,7 +361,7 @@ async function startAccountSwitch(accountId, requestId, targetGame = null) {
         const effectiveGame = targetGame === 'none' ? null : (targetGame || (settings.autoLaunchGame ? (account.game || 'valorant') : null));
         const alreadyLoggedIn = Boolean(activeSession && account.riotId && activeSession.riotId.toLowerCase() === account.riotId.toLowerCase());
 
-        if (alreadyLoggedIn) {
+        if (alreadyLoggedIn && !launchOffline) {
             if (effectiveGame && GAME_ARGS[effectiveGame]) {
                 const gameLabel = effectiveGame === 'league_of_legends' ? 'League of Legends' : 'VALORANT';
                 emitSwitch({ ...payloadBase, state: 'LaunchingGame', message: `Iniciando ${gameLabel}...` });
@@ -383,11 +392,26 @@ async function startAccountSwitch(accountId, requestId, targetGame = null) {
 
             const password = decryptAccountPassword(account);
             emitSwitch({ ...payloadBase, state: 'ClosingExistingSession', message: 'Cerrando la sesión anterior...' });
+            await terminateDeceive();
             if (!(await terminateRiotProcesses())) throw Object.assign(new Error('Riot Client no pudo cerrarse.'), { code: 'RIOT_CLOSE_FAILED' });
 
-            emitSwitch({ ...payloadBase, state: 'StartingRiotClient', message: 'Abriendo Riot Client...' });
-            const initialArgs = (effectiveGame && GAME_ARGS[effectiveGame]) ? GAME_ARGS[effectiveGame] : ['--open-shortcuts'];
-            await launchDetached(riotPath, initialArgs);
+            if (launchOffline) {
+                const deceivePath = resolveDeceivePath(settings.customDeceivePath);
+                if (!isDeceiveInstalled(settings.customDeceivePath)) {
+                    emitSwitch({ ...payloadBase, state: 'StartingRiotClient', message: 'Descargando motor Deceive...' });
+                    try {
+                        await downloadDeceive(deceivePath);
+                    } catch (err) {
+                        throw Object.assign(new Error(`No se pudo descargar Deceive automáticamente: ${err.message}`), { code: 'DECEIVE_DOWNLOAD_FAILED' });
+                    }
+                }
+                emitSwitch({ ...payloadBase, state: 'StartingRiotClient', message: 'Iniciando en Modo Incógnito (Deceive)...' });
+                await launchDeceiveGame(effectiveGame || account.game || 'valorant', settings.customDeceivePath);
+            } else {
+                emitSwitch({ ...payloadBase, state: 'StartingRiotClient', message: 'Abriendo Riot Client...' });
+                const initialArgs = (effectiveGame && GAME_ARGS[effectiveGame]) ? GAME_ARGS[effectiveGame] : ['--open-shortcuts'];
+                await launchDetached(riotPath, initialArgs);
+            }
 
             await runBridge({
                 bridgePath,
@@ -404,10 +428,9 @@ async function startAccountSwitch(accountId, requestId, targetGame = null) {
 
             await waitForAuthenticatedSession(account, payloadBase);
             
-            if (effectiveGame && GAME_ARGS[effectiveGame]) {
+            if (effectiveGame && GAME_ARGS[effectiveGame] && !launchOffline) {
                 const gameLabel = effectiveGame === 'league_of_legends' ? 'League of Legends' : 'VALORANT';
                 emitSwitch({ ...payloadBase, state: 'LaunchingGame', message: `Iniciando ${gameLabel}...` });
-                
                 
                 // Intentar los métodos oficiales
                 const { shell } = require('electron');
@@ -975,15 +998,26 @@ function registerIpc() {
         }
         return { cancelled: false };
     });
-    handle('start-play', ({ accountId, targetGame } = {}) => {
+    handle('start-play', ({ accountId, targetGame, launchOffline } = {}) => {
         const id = String(accountId || '');
         if (!id) throw new Error('Cuenta no válida.');
         const requestId = crypto.randomUUID();
         const admission = operationGate.begin(requestId);
         if (!admission.accepted) return admission;
-        startAccountSwitch(id, requestId, targetGame);
+        startAccountSwitch(id, requestId, targetGame, Boolean(launchOffline));
         updateTrayMenu();
         return admission;
+    });
+    handle('get-deceive-status', () => {
+        const settings = normalizeSettings(store.loadSettings(), DEFAULT_SETTINGS);
+        const installed = isDeceiveInstalled(settings.customDeceivePath);
+        const deceivePath = resolveDeceivePath(settings.customDeceivePath);
+        return { installed, path: deceivePath };
+    });
+    handle('download-deceive', async () => {
+        const settings = normalizeSettings(store.loadSettings(), DEFAULT_SETTINGS);
+        const deceivePath = resolveDeceivePath(settings.customDeceivePath);
+        return await downloadDeceive(deceivePath);
     });
     handle('get-activity-log', () => store.loadActivity());
     handle('get-user-profile', () => store.loadProfile());

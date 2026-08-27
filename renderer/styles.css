@@ -2495,6 +2495,129 @@ button.shortcut-keys.interactive.listening { border-color: var(--accent); backgr
     font-weight: 700;
 }
 
+/* ==========================================================================
+   DECEIVE / MODO DESCONECTADO (OFFLINE) UI
+   ========================================================================== */
+
+.card-action.deceive-toggle {
+    width: 36px;
+    height: 38px;
+    border-radius: 9px;
+    position: relative;
+    color: var(--muted);
+    background: rgba(255, 255, 255, .04);
+    border: 1px solid var(--line);
+    transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-action.deceive-toggle:hover {
+    border-color: #a855f7;
+    color: #c084fc;
+    background: rgba(168, 85, 247, .08);
+    box-shadow: 0 0 12px rgba(168, 85, 247, .2);
+}
+
+.card-action.deceive-toggle.active {
+    background: linear-gradient(135deg, rgba(168, 85, 247, .25), rgba(126, 34, 206, .45));
+    border-color: #c084fc;
+    color: #f3e8ff;
+    box-shadow: 0 0 14px rgba(168, 85, 247, .38), inset 0 0 8px rgba(192, 132, 252, .25);
+}
+
+.card-action.deceive-toggle.active svg {
+    filter: drop-shadow(0 0 4px #c084fc);
+}
+
+.card-action.deceive-toggle .deceive-dot {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #c084fc;
+    box-shadow: 0 0 6px #c084fc;
+}
+
+.play-btn.deceive-mode {
+    border-color: rgba(168, 85, 247, .75);
+    background: rgba(168, 85, 247, .16);
+    color: #e9d5ff;
+}
+
+.play-btn.deceive-mode:hover {
+    background: linear-gradient(135deg, #9333ea, #7e22ce);
+    border-color: #c084fc;
+    color: #fff;
+    box-shadow: 0 0 18px rgba(168, 85, 247, .45);
+}
+
+.play-btn-drop.deceive-mode {
+    border-color: rgba(168, 85, 247, .75);
+    border-left: 1px solid rgba(168, 85, 247, .35);
+    background: rgba(168, 85, 247, .2);
+    color: #e9d5ff;
+}
+
+.play-btn-drop.deceive-mode:hover {
+    background: linear-gradient(135deg, #9333ea, #7e22ce);
+    border-color: #c084fc;
+    color: #fff;
+}
+
+.play-menu.deceive-mode {
+    border-color: rgba(168, 85, 247, .5);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, .8), 0 0 22px rgba(168, 85, 247, .25);
+}
+
+.deceive-badge {
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .05em;
+    background: rgba(168, 85, 247, .15);
+    border: 1px solid rgba(168, 85, 247, .4);
+    color: #c084fc;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.deceive-status-box {
+    margin-top: 10px;
+    padding: 12px 14px;
+    border: 1px solid rgba(168, 85, 247, .28);
+    border-radius: 10px;
+    background: rgba(168, 85, 247, .06);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.deceive-status-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.deceive-badge-icon {
+    font-size: 20px;
+}
+
+.deceive-status-info strong {
+    display: block;
+    font-size: 13px;
+    color: var(--text);
+}
+
+.deceive-status-info small {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+
 
 
 

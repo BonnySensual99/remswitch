@@ -662,6 +662,8 @@ function getAvatarKey(account) {
     return account.game === 'league_of_legends' ? 'ahri' : 'jett';
 }
 
+const accountDeceiveState = {};
+
 function renderAccounts() {
     const query = elements.searchInput.value.trim().toLowerCase();
     const profileAccounts = accounts.filter((account) => (account.profileId || 'default') === activeProfileId);
@@ -708,7 +710,14 @@ function renderAccounts() {
         card.setAttribute('aria-label', `${account.displayName}, ${GAME_LABELS[account.game] || 'Riot'}`);
         const gameLabel = account.game === 'league_of_legends' ? 'LEAGUE OF LEGENDS' : 'VALORANT';
         const defaultGame = account.game === 'league_of_legends' ? 'league_of_legends' : 'valorant';
-        const defaultPlayLabel = account.game === 'league_of_legends' ? 'Jugar LoL' : 'Jugar Valorant';
+        
+        const isOffline = accountDeceiveState[account.id] !== undefined
+            ? Boolean(accountDeceiveState[account.id])
+            : Boolean(account.deceiveOffline);
+        accountDeceiveState[account.id] = isOffline;
+
+        const basePlayLabel = account.game === 'league_of_legends' ? 'Jugar LoL' : 'Jugar Valorant';
+        const defaultPlayLabel = isOffline ? `${basePlayLabel} (Desconectado)` : basePlayLabel;
         const avatarKey = getAvatarKey(account);
         const avatarInitials = (account.avatarAgent || (account.game === 'league_of_legends' ? 'LoL' : 'Val')).slice(0, 2).toUpperCase();
         const avatarContent = account.customAvatar
@@ -738,24 +747,64 @@ function renderAccounts() {
                 <button class="card-action favorite ${account.isFavorite ? 'active' : ''}" type="button" aria-label="${account.isFavorite ? 'Quitar de favoritas' : 'Marcar favorita'}" title="${account.isFavorite ? 'Quitar de favoritas' : 'Marcar favorita'}">${iconSvg('star')}</button>
                 <button class="card-action edit" type="button" aria-label="Editar cuenta" title="Editar cuenta">${iconSvg('edit')}</button>
                 <button class="card-action delete" type="button" aria-label="Eliminar cuenta" title="Eliminar cuenta">${iconSvg('trash')}</button>
+                <button class="card-action deceive-toggle ${isOffline ? 'active' : ''}" type="button" aria-pressed="${String(isOffline)}" title="${isOffline ? 'Modo Desconectado: ACTIVADO (Deceive)' : 'Modo Desconectado: DESACTIVADO (Deceive)'}" aria-label="Alternar modo desconectado">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12 2a9 9 0 0 0-9 9c0 4.17 2.84 7.67 6.69 8.69L10 21l2-1.5 2 1.5.31-1.31C18.16 18.67 21 15.17 21 11a9 9 0 0 0-9-9zm-3.5 8a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm7 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>
+                    ${isOffline ? '<span class="deceive-dot" aria-hidden="true"></span>' : ''}
+                </button>
                 <div class="play-group">
-                    <button class="play-btn" type="button">
-                        ${getGameLogoSvg(defaultGame)} <span>${defaultPlayLabel}</span>
+                    <button class="play-btn ${isOffline ? 'deceive-mode' : ''}" type="button">
+                        ${getGameLogoSvg(defaultGame)} <span class="play-btn-text">${escapeHtml(defaultPlayLabel)}</span>
                     </button>
-                    <button class="play-btn-drop" type="button" aria-label="Más opciones de juego" title="Opciones de inicio">
+                    <button class="play-btn-drop ${isOffline ? 'deceive-mode' : ''}" type="button" aria-label="Más opciones de juego" title="Opciones de inicio">
                         <svg viewBox="0 0 16 16" width="10" height="10" fill="currentColor" aria-hidden="true"><path d="M4 6l4 4 4-4z"/></svg>
                     </button>
-                    <div class="play-menu hidden">
-                        <button class="play-menu-item opt-val" type="button">${getGameLogoSvg('valorant')} <span>Jugar Valorant</span></button>
-                        <button class="play-menu-item opt-lol" type="button">${getGameLogoSvg('league_of_legends')} <span>Jugar League of Legends</span></button>
-                        <button class="play-menu-item opt-riot" type="button">${getGameLogoSvg('riot')} <span>Solo abrir Riot Client</span></button>
+                    <div class="play-menu ${isOffline ? 'deceive-mode' : ''} hidden">
+                        <button class="play-menu-item opt-val" type="button">${getGameLogoSvg('valorant')} <span class="opt-val-text">Jugar Valorant ${isOffline ? '(Desconectado)' : ''}</span></button>
+                        <button class="play-menu-item opt-lol" type="button">${getGameLogoSvg('league_of_legends')} <span class="opt-lol-text">Jugar League of Legends ${isOffline ? '(Desconectado)' : ''}</span></button>
+                        <button class="play-menu-item opt-riot" type="button">${getGameLogoSvg('riot')} <span class="opt-riot-text">Solo abrir Riot Client ${isOffline ? '(Desconectado)' : ''}</span></button>
                     </div>
                 </div>
             </div>`;
         card.querySelector('.favorite').addEventListener('click', () => toggleFavorite(account));
         card.querySelector('.edit').addEventListener('click', () => openAccountModal(account));
         card.querySelector('.delete').addEventListener('click', () => deleteAccount(account));
-        card.querySelector('.play-btn').addEventListener('click', () => beginSwitch(account, account.game || 'valorant'));
+        
+        const deceiveBtn = card.querySelector('.deceive-toggle');
+        deceiveBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const nextOffline = !Boolean(accountDeceiveState[account.id]);
+            accountDeceiveState[account.id] = nextOffline;
+            
+            deceiveBtn.classList.toggle('active', nextOffline);
+            deceiveBtn.setAttribute('aria-pressed', String(nextOffline));
+            deceiveBtn.title = nextOffline ? 'Modo Desconectado: ACTIVADO (Deceive)' : 'Modo Desconectado: DESACTIVADO (Deceive)';
+            deceiveBtn.innerHTML = `
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12 2a9 9 0 0 0-9 9c0 4.17 2.84 7.67 6.69 8.69L10 21l2-1.5 2 1.5.31-1.31C18.16 18.67 21 15.17 21 11a9 9 0 0 0-9-9zm-3.5 8a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm7 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>
+                ${nextOffline ? '<span class="deceive-dot" aria-hidden="true"></span>' : ''}
+            `;
+            
+            const pBtn = card.querySelector('.play-btn');
+            const pDrop = card.querySelector('.play-btn-drop');
+            const pMenu = card.querySelector('.play-menu');
+            const pText = card.querySelector('.play-btn-text');
+            const optValT = card.querySelector('.opt-val-text');
+            const optLolT = card.querySelector('.opt-lol-text');
+            const optRiotT = card.querySelector('.opt-riot-text');
+            
+            pBtn.classList.toggle('deceive-mode', nextOffline);
+            pDrop.classList.toggle('deceive-mode', nextOffline);
+            pMenu.classList.toggle('deceive-mode', nextOffline);
+            
+            const curBaseLabel = account.game === 'league_of_legends' ? 'Jugar LoL' : 'Jugar Valorant';
+            if (pText) pText.textContent = nextOffline ? `${curBaseLabel} (Desconectado)` : curBaseLabel;
+            if (optValT) optValT.textContent = `Jugar Valorant ${nextOffline ? '(Desconectado)' : ''}`;
+            if (optLolT) optLolT.textContent = `Jugar League of Legends ${nextOffline ? '(Desconectado)' : ''}`;
+            if (optRiotT) optRiotT.textContent = `Solo abrir Riot Client ${nextOffline ? '(Desconectado)' : ''}`;
+            
+            showToast(nextOffline ? 'Modo Desconectado activado para esta cuenta.' : 'Modo Desconectado desactivado.');
+        });
+
+        card.querySelector('.play-btn').addEventListener('click', () => beginSwitch(account, account.game || 'valorant', Boolean(accountDeceiveState[account.id])));
         
         const dropBtn = card.querySelector('.play-btn-drop');
         const playMenu = card.querySelector('.play-menu');
@@ -768,17 +817,17 @@ function renderAccounts() {
         card.querySelector('.opt-val').addEventListener('click', (event) => {
             event.stopPropagation();
             playMenu.classList.add('hidden');
-            beginSwitch(account, 'valorant');
+            beginSwitch(account, 'valorant', Boolean(accountDeceiveState[account.id]));
         });
         card.querySelector('.opt-lol').addEventListener('click', (event) => {
             event.stopPropagation();
             playMenu.classList.add('hidden');
-            beginSwitch(account, 'league_of_legends');
+            beginSwitch(account, 'league_of_legends', Boolean(accountDeceiveState[account.id]));
         });
         card.querySelector('.opt-riot').addEventListener('click', (event) => {
             event.stopPropagation();
             playMenu.classList.add('hidden');
-            beginSwitch(account, 'none');
+            beginSwitch(account, 'none', Boolean(accountDeceiveState[account.id]));
         });
         elements.accountsList.append(card);
     }
@@ -786,7 +835,7 @@ function renderAccounts() {
 }
 
 function setSwitchControlsDisabled(disabled) {
-    document.querySelectorAll('.play-btn, .play-btn-drop, .play-menu-item, .account-card .edit, .account-card .delete, #btnAdd, #btnManageAccounts').forEach((button) => { button.disabled = disabled; });
+    document.querySelectorAll('.play-btn, .play-btn-drop, .play-menu-item, .card-action.deceive-toggle, .account-card .edit, .account-card .delete, #btnAdd, #btnManageAccounts').forEach((button) => { button.disabled = disabled; });
 }
 
 function setActiveNav(tabName) {
@@ -1089,6 +1138,7 @@ function openAccountModal(account = null) {
     $('accRiotId').value = account?.riotId || '';
     $('accLevel').value = account?.level || '';
     $('accNotes').value = account?.notes || '';
+    if ($('accDeceiveOffline')) $('accDeceiveOffline').checked = Boolean(account?.deceiveOffline);
     $('accPassword').value = '';
     $('accPassword').required = !account;
     $('accPassword').placeholder = account ? 'Dejar en blanco para conservar' : 'Protegida con DPAPI';
@@ -1147,7 +1197,8 @@ async function saveAccount(event) {
             level: $('accLevel').value,
             avatarAgent: $('accAvatar').value,
             customAvatar: $('accCustomAvatar').value || '',
-            notes: $('accNotes').value
+            notes: $('accNotes').value,
+            deceiveOffline: Boolean($('accDeceiveOffline')?.checked)
         });
         hideModal(elements.accountModal);
         renderAccounts();
@@ -1176,22 +1227,26 @@ async function deleteAccount(account) {
     } catch (error) { showToast(error.message || 'No se pudo eliminar.', 'error'); }
 }
 
-async function beginSwitch(account, targetGame = null) {
+async function beginSwitch(account, targetGame = null, launchOffline = false) {
     if (!rendererApi || activeRequestId) return;
     lastSwitchAccount = account;
     const gameToLaunch = targetGame === 'none' ? 'none' : (targetGame || account.game || 'valorant');
-    const targetLabel = gameToLaunch === 'none'
+    const baseTargetLabel = gameToLaunch === 'none'
         ? 'Riot Client (sin abrir juego)'
         : (gameToLaunch === 'league_of_legends' ? 'League of Legends' : 'VALORANT');
+    const targetLabel = launchOffline ? `${baseTargetLabel} [Modo Desconectado]` : baseTargetLabel;
     if (settings?.confirmSwitch) {
-        const accepted = await confirmAction('Cambiar cuenta', `Riot Client se cerrará para iniciar “${account.displayName}” y abrir ${targetLabel}.`, 'Iniciar cambio');
+        const confirmMsg = launchOffline
+            ? `Riot Client se cerrará para iniciar “${account.displayName}” en MODO DESCONECTADO (Deceive) y abrir ${baseTargetLabel}.`
+            : `Riot Client se cerrará para iniciar “${account.displayName}” y abrir ${targetLabel}.`;
+        const accepted = await confirmAction('Cambiar cuenta', confirmMsg, 'Iniciar cambio');
         if (!accepted) return;
     }
     try {
-        const result = await rendererApi.startPlay(account.id, gameToLaunch);
+        const result = await rendererApi.startPlay(account.id, gameToLaunch, Boolean(launchOffline));
         if (!result.accepted) return showToast('Ya hay un cambio de cuenta en curso.', 'error');
         activeRequestId = result.requestId;
-        showSwitchOverlay(gameToLaunch, account);
+        showSwitchOverlay(gameToLaunch, account, Boolean(launchOffline));
         setSwitchControlsDisabled(true);
         renderRuntime();
     } catch (error) {
@@ -1204,15 +1259,21 @@ function resetSwitchActions() {
     ['btnRetrySwitch', 'btnOpenRiot', 'btnManualLogout', 'btnCloseSwitch', 'btnForceCloseGame', 'btnCancelSwitch'].forEach((id) => $(id).classList.add('hidden'));
 }
 
-function showSwitchOverlay(game, account = null) {
+function showSwitchOverlay(game, account = null, launchOffline = false) {
     switchPreviousFocus = document.activeElement;
-    $('switchGame').textContent = GAME_LABELS[game] || 'RIOT SESSION';
+    $('switchGame').textContent = launchOffline
+        ? `${GAME_LABELS[game] || 'RIOT SESSION'} · 👻 DESCONECTADO`
+        : (GAME_LABELS[game] || 'RIOT SESSION');
     document.querySelector('.switch-radar').innerHTML = getGameLogoSvg(game);
-    $('switchTarget').textContent = account?.displayName ? `Destino · ${account.displayName}` : 'Cuenta destino';
+    $('switchTarget').textContent = account?.displayName
+        ? `Destino · ${account.displayName}${launchOffline ? ' (Incógnito)' : ''}`
+        : 'Cuenta destino';
     $('switchSource').textContent = runtimeStatus?.activeSession?.riotId || 'Sin sesión';
-    $('switchDestination').textContent = account?.displayName || 'Cuenta destino';
+    $('switchDestination').textContent = account?.displayName
+        ? `${account.displayName}${launchOffline ? ' [Modo Desconectado]' : ''}`
+        : 'Cuenta destino';
     $('switchTitle').textContent = 'Preparando operación';
-    $('switchMessage').textContent = 'Comprobando el sistema…';
+    $('switchMessage').textContent = launchOffline ? 'Iniciando en Modo Incógnito (Deceive)...' : 'Comprobando el sistema…';
     $('switchProgress').className = 'progress-5';
     resetSwitchActions();
     document.querySelector('.switch-panel').classList.remove('error', 'manual', 'waiting', 'done');
@@ -1347,8 +1408,28 @@ async function openSettings() {
         $('setFieldDelay').value = settings.fieldDelayMs;
         $('setCustomRiotPath').value = settings.customRiotPath || '';
         $('testRiotStatus').textContent = '';
+        refreshDeceiveStatus();
         showModal(elements.settingsModal);
     } catch (error) { showToast(error.message || 'No se pudieron cargar los ajustes.', 'error'); }
+}
+
+async function refreshDeceiveStatus() {
+    if (!rendererApi?.getDeceiveStatus) return;
+    try {
+        const status = await rendererApi.getDeceiveStatus();
+        const titleEl = $('deceiveStatusTitle');
+        const descEl = $('deceiveStatusDesc');
+        const btnEl = $('btnDownloadDeceive');
+        if (status.installed) {
+            if (titleEl) titleEl.textContent = '✓ Motor Deceive Instalado';
+            if (descEl) descEl.textContent = 'Listo para jugar en modo desconectado.';
+            if (btnEl) btnEl.textContent = 'Actualizar Deceive';
+        } else {
+            if (titleEl) titleEl.textContent = 'Motor Deceive no detectado';
+            if (descEl) descEl.textContent = 'Haz clic para descargarlo automáticamente desde GitHub.';
+            if (btnEl) btnEl.textContent = 'Descargar Deceive';
+        }
+    } catch {}
 }
 
 async function checkForUpdates() {
@@ -1617,6 +1698,23 @@ function bindEvents() {
     $('settingsForm').addEventListener('submit', saveSettings);
     $('profileForm').addEventListener('submit', saveProfile);
     $('btnTestRiot').addEventListener('click', testRiotClient);
+    $('btnDownloadDeceive')?.addEventListener('click', async () => {
+        if (!rendererApi?.downloadDeceive) return;
+        const btn = $('btnDownloadDeceive');
+        btn.disabled = true;
+        btn.textContent = 'Descargando Deceive...';
+        try {
+            await rendererApi.downloadDeceive();
+            showToast('Deceive descargado y configurado correctamente.', 'success');
+            playSound('success');
+            await refreshDeceiveStatus();
+        } catch (err) {
+            showToast(err.message || 'Error al descargar Deceive.', 'error');
+            playSound('error');
+        } finally {
+            btn.disabled = false;
+        }
+    });
     $('btnCheckUpdates').addEventListener('click', checkForUpdates);
     $('btnInstallUpdate').addEventListener('click', installUpdate);
     $('accGame').addEventListener('change', () => updateGameFields($('accGame').value));

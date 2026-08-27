@@ -55,3 +55,11 @@ test('el renderer incluye soporte de estilos visuales y paleta de colores', () =
     assert.match(js, /applyColor/);
 });
 
+test('el renderer incluye soporte de modo desconectado / Deceive con activable dinámico', () => {
+    assert.match(html, /id="accDeceiveOffline"/);
+    assert.match(html, /id="btnDownloadDeceive"/);
+    assert.match(js, /deceive-toggle/);
+    assert.match(js, /rendererApi\.startPlay\(account\.id/);
+});
+
+

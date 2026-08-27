@@ -286,6 +286,15 @@
                         <label for="accNotes">Notas / Descripción</label>
                         <textarea id="accNotes" rows="2" placeholder="Notas sobre esta cuenta..."></textarea>
                     </div>
+                    <div class="form-group full">
+                        <label class="switch-row compact-switch" for="accDeceiveOffline">
+                            <span>
+                                <strong>👻 Iniciar siempre en Modo Desconectado (Deceive)</strong>
+                                <small>Aparece como desconectado ante tus amigos de Riot al jugar</small>
+                            </span>
+                            <input type="checkbox" id="accDeceiveOffline">
+                        </label>
+                    </div>
                 </div>
 
                 <div class="modal-actions">
@@ -411,6 +420,18 @@
                             
                             <h3 class="section-heading">Seguridad de sesión</h3>
                             <label class="switch-row"><span><strong>Pedir confirmación de cambio</strong><small>Mostrar aviso antes de cerrar el cliente actual</small></span><input type="checkbox" id="setConfirmSwitch"></label>
+
+                            <h3 class="section-heading">Modo Incógnito / Deceive</h3>
+                            <div class="deceive-status-box">
+                                <div class="deceive-status-info">
+                                    <span class="deceive-badge-icon">👻</span>
+                                    <div>
+                                        <strong id="deceiveStatusTitle">Motor Deceive (Aparecer Desconectado)</strong>
+                                        <small id="deceiveStatusDesc">Comprobando disponibilidad de Deceive...</small>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn secondary small" id="btnDownloadDeceive">Descargar Deceive</button>
+                            </div>
                         </div>
 
                         <!-- Pestaña: Atajos -->

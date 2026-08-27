@@ -15,8 +15,10 @@ contextBridge.exposeInMainWorld('api', Object.freeze({
     importActiveSession: () => ipcRenderer.invoke('import-active-session'),
     forceCloseGames: () => ipcRenderer.invoke('force-close-games'),
     syncLiveRank: () => ipcRenderer.invoke('sync-live-rank'),
-    startPlay: (accountId, targetGame) => ipcRenderer.invoke('start-play', { accountId, targetGame }),
+    startPlay: (accountId, targetGame, launchOffline) => ipcRenderer.invoke('start-play', { accountId, targetGame, launchOffline }),
     cancelSwitch: () => ipcRenderer.invoke('cancel-switch'),
+    getDeceiveStatus: () => ipcRenderer.invoke('get-deceive-status'),
+    downloadDeceive: () => ipcRenderer.invoke('download-deceive'),
 
     getActivityLog: () => ipcRenderer.invoke('get-activity-log'),
     getUserProfile: () => ipcRenderer.invoke('get-user-profile'),
