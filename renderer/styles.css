@@ -1,4 +1,4 @@
-:root {
+﻿:root {
     color-scheme: dark;
     --bg: #05070c;
     --panel: rgba(12, 17, 27, .94);
@@ -488,7 +488,7 @@ svg { width: 18px; height: 18px; fill: currentColor; }
 .favorite-mark { color: var(--warning); }
 .account-id { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .meta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 7px; }
-.meta-row > span:not(:last-child)::after { content: "â€¢"; margin-left: 8px; color: var(--muted-2); opacity: 0.4; font-size: 8px; vertical-align: middle; }
+.meta-row > span:not(:last-child)::after { content: "•"; margin-left: 8px; color: var(--muted-2); opacity: 0.4; font-size: 8px; vertical-align: middle; }
 /* Rank Badges */
 .meta-rank {
     font-weight: 850;
@@ -1913,5 +1913,7 @@ button.shortcut-keys.interactive.listening { border-color: var(--accent); backgr
 .form-section { margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
 .form-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
 .form-section h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent); margin: 0 0 12px 0; font-weight: 700; }
-.card-action.favorite.active { color: #ffd700; border-color: rgba(255, 215, 0, 0.4); background: rgba(255, 215, 0, 0.05); }
+.card-action.favorite.active { color: #ffd700 !important; border-color: rgba(255, 215, 0, 0.6) !important; background: rgba(255, 215, 0, 0.15) !important; box-shadow: 0 0 12px rgba(255, 215, 0, 0.2); }
 .card-action.favorite.active:hover { color: #ffea00; border-color: #ffd700; background: rgba(255, 215, 0, 0.1); }
+
+

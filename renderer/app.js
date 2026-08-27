@@ -1,4 +1,4 @@
-
+﻿
 function formatShortcut(accelerator) {
     if (!accelerator) return '<span style="color:var(--muted)">Sin asignar</span>';
     const parts = accelerator.split('+');
@@ -735,7 +735,7 @@ function renderAccounts() {
                 </div>
             </div>
             <div class="account-actions">
-                <button class="card-action favorite" type="button" aria-label="${account.isFavorite ? 'Quitar de favoritas' : 'Marcar favorita'}" title="${account.isFavorite ? 'Quitar de favoritas' : 'Marcar favorita'}">${iconSvg('star')}</button>
+                <button class="card-action favorite ${account.isFavorite ? 'active' : ''}" type="button" aria-label="${account.isFavorite ? 'Quitar de favoritas' : 'Marcar favorita'}" title="${account.isFavorite ? 'Quitar de favoritas' : 'Marcar favorita'}">${iconSvg('star')}</button>
                 <button class="card-action edit" type="button" aria-label="Editar cuenta" title="Editar cuenta">${iconSvg('edit')}</button>
                 <button class="card-action delete" type="button" aria-label="Eliminar cuenta" title="Eliminar cuenta">${iconSvg('trash')}</button>
                 <div class="play-group">
@@ -1593,3 +1593,5 @@ if (shortcutInput) {
         }
     });
 }
+
+
