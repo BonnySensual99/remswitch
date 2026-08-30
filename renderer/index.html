@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://media.valorant-api.com; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
     <title>RemSwitcher</title>
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -18,12 +18,12 @@
 
         <nav class="nav-tabs" id="navTabs" aria-label="Navegación principal">
             <button class="nav-tab active" data-tab="accounts" aria-current="page" type="button">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0H5Z"/></svg>
-                Mis Cuentas
+                <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M5.5 3.5a2 2 0 100 4 2 2 0 000-4zM2 5.5a3.5 3.5 0 115.898 2.549 5.507 5.507 0 013.034 4.084.75.75 0 11-1.482.235 4.001 4.001 0 00-7.9 0 .75.75 0 01-1.482-.236A5.507 5.507 0 013.102 8.05 3.49 3.49 0 012 5.5zM11 4a.75.75 0 100 1.5 1.5 1.5 0 01.666 2.844.75.75 0 00-.416.672v.352a.75.75 0 00.574.73c1.2.289 2.162 1.2 2.522 2.372a.75.75 0 101.434-.44 5.01 5.01 0 00-3.123-3.02 3 3 0 00-1.657-4.996z"/></svg>
+                <span>Cuentas</span>
             </button>
             <button class="nav-tab" data-tab="display" id="navTabDisplay" type="button">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 3H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h7v2H8v2h8v-2h-3v-2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 13H4V5h16v11z"/></svg>
-                Pantalla
+                <span>Pantalla</span>
             </button>
             <button class="nav-tab" data-tab="settings" type="button">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m19.4 13 .1-1-.1-1 2-1.5-2-3.4-2.4 1a8 8 0 0 0-1.8-1L15 3.5h-4l-.3 2.6a8 8 0 0 0-1.8 1l-2.4-1-2 3.4 2 1.5-.1 1 .1 1-2 1.5 2 3.4 2.4-1a8 8 0 0 0 1.8 1l.3 2.6h4l.3-2.6a8 8 0 0 0 1.8-1l2.4 1 2-3.4-2-1.5ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/></svg>
@@ -85,6 +85,10 @@
                         <p id="pageSubtitle">Cambia entre Valorant y League of Legends con 1 solo clic.</p>
                     </div>
                     <div class="hero-actions">
+                        <button class="btn secondary" id="btnScanStores" type="button" title="Escanear tiendas de todas las cuentas de Valorant">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1.003 1.003 0 0 0 20 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                            Escanear Tiendas
+                        </button>
                         <button class="btn secondary" id="btnManageAccounts" type="button">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18h16v-2H4v2ZM4 13h16v-2H4v2ZM4 8h16V6H4v2Z"/></svg>
                             Gestionar cuentas
@@ -623,6 +627,45 @@
                 <button class="btn secondary hidden" id="btnCancelSwitch" type="button">Cancelar</button>
                 <button class="btn secondary hidden" id="btnCloseSwitch" type="button">Cerrar</button>
             </div>
+        </section>
+    </div>
+
+    <!-- MODAL: ESCANEAR TIENDAS -->
+    <div class="modal-overlay" id="scanModal" aria-hidden="true">
+        <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="scanModalTitle">
+            <header class="modal-header">
+                <div><h2 id="scanModalTitle">Escaneando Tiendas</h2></div>
+            </header>
+            <div class="modal-body scan-modal-body">
+                <div class="switch-radar scan-radar"><span></span></div>
+                <p id="scanProgressText" class="scan-progress-text">Iniciando escáner...</p>
+                <p id="scanDetailsText" class="scan-details-text"></p>
+                <button class="btn secondary scan-cancel-btn" id="btnCancelScan" type="button">Cancelar</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- MODAL: VALORANT STORE -->
+    <div class="modal-overlay" id="storeModal" aria-hidden="true">
+        <section class="modal-card store-modal" role="dialog" aria-modal="true" aria-labelledby="storeTitle">
+            <header class="modal-header">
+                <div><span class="eyebrow">VALORANT</span><h2 id="storeTitle">Tienda Diaria</h2></div>
+                <button class="modal-close" id="btnCloseStoreModal" type="button" aria-label="Cerrar">×</button>
+            </header>
+            <div class="store-body" id="storeBody">
+                <div id="storeLoading" class="store-loading">
+                    <div class="switch-radar"><span></span></div>
+                    Cargando ofertas...
+                </div>
+                <div id="storeError" class="hidden store-error"></div>
+                <div id="storeOffers" class="store-grid hidden">
+                    <!-- Offers will be injected here -->
+                </div>
+                <div id="storeTimer" class="hidden store-timer"></div>
+            </div>
+            <footer class="modal-footer">
+                <button class="btn primary" id="btnCloseStoreModalBtn" type="button">Cerrar</button>
+            </footer>
         </section>
     </div>
 

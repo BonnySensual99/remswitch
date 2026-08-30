@@ -15,6 +15,15 @@ contextBridge.exposeInMainWorld('api', Object.freeze({
     importActiveSession: () => ipcRenderer.invoke('import-active-session'),
     forceCloseGames: () => ipcRenderer.invoke('force-close-games'),
     syncLiveRank: () => ipcRenderer.invoke('sync-live-rank'),
+    getValorantStore: () => ipcRenderer.invoke('get-valorant-store'),
+    scanValorantStores: (profileId) => ipcRenderer.invoke('scan-valorant-stores', profileId),
+    cancelScanStores: () => ipcRenderer.invoke('cancel-scan-stores'),
+    onScanStoresProgress: (callback) => {
+        if (typeof callback !== 'function') return () => {};
+        const listener = (_event, payload) => callback(payload);
+        ipcRenderer.on('scan-stores-progress', listener);
+        return () => ipcRenderer.removeListener('scan-stores-progress', listener);
+    },
     startPlay: (accountId, targetGame, launchOffline) => ipcRenderer.invoke('start-play', { accountId, targetGame, launchOffline }),
     cancelSwitch: () => ipcRenderer.invoke('cancel-switch'),
     getDeceiveStatus: () => ipcRenderer.invoke('get-deceive-status'),

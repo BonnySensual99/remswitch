@@ -21,7 +21,9 @@ test('no existen IDs duplicados', () => {
 
 test('la interfaz no carga fuentes ni scripts remotos y declara CSP', () => {
     assert.match(html, /Content-Security-Policy/);
-    assert.doesNotMatch(html, /https?:\/\//);
+    // Allow https://media.valorant-api.com in CSP for store images
+    const htmlWithoutValorantMedia = html.replace(/https:\/\/media\.valorant-api\.com/g, '');
+    assert.doesNotMatch(htmlWithoutValorantMedia, /https?:\/\//);
 });
 
 test('el renderer inicia operaciones únicamente mediante accountId', () => {

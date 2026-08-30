@@ -13,7 +13,7 @@ const { decryptFromCandidates } = require('./lib/legacy-safe-storage');
 const { runBridge } = require('./lib/bridge-runner');
 const { OperationGate } = require('./lib/operation-gate');
 const { launchDetached } = require('./lib/process-launcher');
-const { queryRiotSession, queryLiveRankAndStats, logoutRiotSession } = require('./lib/riot-session');
+const { queryRiotSession, queryLiveRankAndStats, logoutRiotSession, getValorantStorefront } = require('./lib/riot-session');
 const displayManager = require('./lib/display-manager');
 const {
     startStealthProxy,
@@ -484,6 +484,216 @@ async function startAccountSwitch(accountId, requestId, targetGame = null, launc
         operationGate.end(requestId);
         updateTrayMenu();
     }
+}
+
+let scanCancelRequested = false;
+
+async function scanValorantStores(profileId) {
+    scanCancelRequested = false;
+    const accounts = store.loadAccounts();
+    const settings = normalizeSettings(store.loadSettings(), DEFAULT_SETTINGS);
+    const riotPath = resolveValidatedRiotClient();
+    const bridgePath = getBridgeExePath();
+
+    if (!fs.existsSync(bridgePath)) {
+        throw Object.assign(new Error('No se encontró el puente nativo.'), { code: 'BRIDGE_MISSING' });
+    }
+
+    const targetAccounts = accounts.filter((a) => {
+        const isVal = (a.game || 'valorant') === 'valorant';
+        const matchesProfile = profileId ? (a.profileId === profileId || (!a.profileId && profileId === 'default')) : true;
+        return isVal && matchesProfile;
+    });
+
+    if (targetAccounts.length === 0) {
+        return { success: false, message: 'No hay cuentas de Valorant en este perfil para escanear.' };
+    }
+
+    const emitProgress = (payload) => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('scan-stores-progress', payload);
+        }
+    };
+
+    let scannedCount = 0;
+
+    for (let i = 0; i < targetAccounts.length; i++) {
+        if (scanCancelRequested) break;
+        const account = targetAccounts[i];
+        const accName = account.displayName || account.name || account.username;
+
+        emitProgress({
+            current: i + 1,
+            total: targetAccounts.length,
+            accountName: accName,
+            status: 'starting',
+            message: `Iniciando sesión en ${accName}...`
+        });
+
+        try {
+            let activeSession = await queryRiotSession();
+            let needLogin = true;
+            if (activeSession && account.riotId && activeSession.riotId.toLowerCase() === account.riotId.toLowerCase()) {
+                needLogin = false;
+            }
+
+            if (needLogin) {
+                if (activeSession) {
+                    emitProgress({
+                        current: i + 1,
+                        total: targetAccounts.length,
+                        accountName: accName,
+                        status: 'logging_out',
+                        message: `Cerrando sesión anterior...`
+                    });
+                    try { await logoutRiotSession({ verifyTimeoutMs: 1200 }); } catch {}
+                }
+
+                await terminateGameProcesses();
+                await terminateRiotProcesses();
+                await delay(1000);
+
+                if (scanCancelRequested) break;
+
+                const password = decryptAccountPassword(account);
+
+                emitProgress({
+                    current: i + 1,
+                    total: targetAccounts.length,
+                    accountName: accName,
+                    status: 'logging_in',
+                    message: `Autenticando en Riot Client...`
+                });
+
+                await launchDetached(riotPath, ['--open-shortcuts']);
+
+                await runBridge({
+                    bridgePath,
+                    request: {
+                        username: account.username,
+                        password,
+                        riotClientPath: riotPath,
+                        initialDelayMs: settings.initialDelayMs || 1800,
+                        charDelayMs: settings.charDelayMs || 15,
+                        fieldDelayMs: settings.fieldDelayMs || 200
+                    },
+                    onState: () => {}
+                });
+
+                if (scanCancelRequested) break;
+
+                const authDeadline = Date.now() + 45000;
+                while (Date.now() < authDeadline) {
+                    if (scanCancelRequested) break;
+                    activeSession = await queryRiotSession();
+                    if (activeSession) break;
+                    await delay(1000);
+                }
+            }
+
+            if (scanCancelRequested) break;
+
+            if (activeSession) {
+                emitProgress({
+                    current: i + 1,
+                    total: targetAccounts.length,
+                    accountName: accName,
+                    status: 'fetching_store',
+                    message: `Obteniendo ofertas de la tienda...`
+                });
+
+                await delay(2500);
+
+                const storefront = await getValorantStorefront();
+                if (storefront && storefront.offers && storefront.offers.length > 0) {
+                    const currentAccounts = store.loadAccounts();
+                    const accIndex = currentAccounts.findIndex((item) => item.id === account.id);
+                    if (accIndex >= 0) {
+                        currentAccounts[accIndex].storeCache = {
+                            offers: storefront.offers,
+                            durationLeft: storefront.durationLeft,
+                            expiry: Date.now() + (storefront.durationLeft * 1000)
+                        };
+                        store.saveAccounts(currentAccounts);
+                        scannedCount++;
+                    }
+
+                    emitProgress({
+                        current: i + 1,
+                        total: targetAccounts.length,
+                        accountName: accName,
+                        status: 'done_account',
+                        message: `¡Tienda guardada! (${storefront.offers.length} ofertas)`
+                    });
+                } else {
+                    emitProgress({
+                        current: i + 1,
+                        total: targetAccounts.length,
+                        accountName: accName,
+                        status: 'warn',
+                        message: `No se pudieron cargar las ofertas de ${accName}.`
+                    });
+                }
+            } else {
+                emitProgress({
+                    current: i + 1,
+                    total: targetAccounts.length,
+                    accountName: accName,
+                    status: 'error',
+                    message: `Tiempo de espera agotado al autenticar ${accName}.`
+                });
+            }
+        } catch (error) {
+            log('WARN', `Error escaneando tienda de ${accName}: ${error.message}`);
+            emitProgress({
+                current: i + 1,
+                total: targetAccounts.length,
+                accountName: accName,
+                status: 'error',
+                message: `Error en ${accName}: ${error.message}`
+            });
+        }
+
+        // Always logout and close Riot Client after each account
+        emitProgress({
+            current: i + 1,
+            total: targetAccounts.length,
+            accountName: accName,
+            status: 'closing',
+            message: `Cerrando sesión de ${accName}...`
+        });
+        try { await logoutRiotSession({ verifyTimeoutMs: 1000 }); } catch {}
+        await terminateRiotProcesses();
+
+        if (i < targetAccounts.length - 1 && !scanCancelRequested) {
+            emitProgress({
+                current: i + 1,
+                total: targetAccounts.length,
+                accountName: accName,
+                status: 'waiting',
+                message: `Esperando antes de la siguiente cuenta...`
+            });
+            await delay(2500);
+        }
+    }
+
+    // Always ensure Riot is closed at the end
+    try { await logoutRiotSession({ verifyTimeoutMs: 800 }); } catch {}
+    await terminateRiotProcesses();
+
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('accounts-updated', store.loadAccounts().map(toPublicAccount));
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.show();
+        mainWindow.focus();
+    }
+
+    return {
+        success: !scanCancelRequested,
+        cancelled: scanCancelRequested,
+        scannedCount,
+        total: targetAccounts.length
+    };
 }
 
 async function detectActiveRiotSession() {
@@ -1025,6 +1235,16 @@ function registerIpc() {
     handle('sync-live-rank', async () => {
         const result = await syncAccountsWithLiveRank();
         return result || { synced: false };
+    });
+    handle('get-valorant-store', async () => {
+        return getValorantStorefront();
+    });
+    handle('scan-valorant-stores', (profileId) => {
+        return scanValorantStores(profileId);
+    });
+    handle('cancel-scan-stores', () => {
+        scanCancelRequested = true;
+        return { cancelled: true };
     });
     handle('cancel-switch', () => {
         if (operationGate.activeRequestId) {

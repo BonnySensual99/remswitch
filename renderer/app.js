@@ -750,6 +750,7 @@ function renderAccounts() {
                 </div>
             </div>
             <div class="account-actions">
+                ${account.game === 'valorant' ? `<button class="card-action store-btn" type="button" aria-label="Tienda Diaria" title="Ver Tienda Diaria">🛒</button>` : ''}
                 <button class="card-action favorite ${account.isFavorite ? 'active' : ''}" type="button" aria-label="${account.isFavorite ? 'Quitar de favoritas' : 'Marcar favorita'}" title="${account.isFavorite ? 'Quitar de favoritas' : 'Marcar favorita'}">${iconSvg('star')}</button>
                 <button class="card-action edit" type="button" aria-label="Editar cuenta" title="Editar cuenta">${iconSvg('edit')}</button>
                 <button class="card-action delete" type="button" aria-label="Eliminar cuenta" title="Eliminar cuenta">${iconSvg('trash')}</button>
@@ -767,6 +768,18 @@ function renderAccounts() {
                     </div>
                 </div>
             </div>`;
+        if (account.game === 'valorant') {
+            const storeBtn = card.querySelector('.store-btn');
+            if (storeBtn) {
+                if (account.storeCache && Date.now() < account.storeCache.expiry) {
+                    storeBtn.classList.add('cached'); // Can style this differently if needed
+                }
+                storeBtn.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    openStoreModal(account);
+                });
+            }
+        }
         card.querySelector('.favorite').addEventListener('click', () => toggleFavorite(account));
         card.querySelector('.edit').addEventListener('click', () => openAccountModal(account));
         card.querySelector('.delete').addEventListener('click', () => deleteAccount(account));
@@ -2013,42 +2026,6 @@ async function initialize() {
                 refreshRuntimeStatus();
             }
         }, 5000);
-        if (rendererApi.onUpdateStatus) {
-            rendererApi.onUpdateStatus((payload) => {
-                if (!payload) return;
-                if (payload.status === 'checking') {
-                    $('updateStatusText').textContent = 'Buscando actualizaciones…';
-                } else if (payload.status === 'available') {
-                    $('updateStatusText').textContent = `Nueva versión ${payload.version ? `v${payload.version}` : ''} disponible. Descargando…`;
-                    $('updateBannerTitle').textContent = 'Actualización disponible';
-                    $('updateBannerMessage').textContent = payload.version ? `Descargando v${payload.version} en segundo plano…` : 'Descargando nueva versión en segundo plano…';
-                    $('btnBannerUpdate').textContent = 'Descargando…';
-                    $('btnBannerUpdate').disabled = true;
-                    $('updateBanner').classList.remove('hidden');
-                    $('settingsUpdateBadge').classList.remove('hidden');
-                    showToast(`Nueva versión ${payload.version ? `v${payload.version}` : ''} disponible.`);
-                } else if (payload.status === 'downloading') {
-                    const pct = payload.percent || 0;
-                    $('updateStatusText').textContent = `Descargando actualización: ${pct}%`;
-                    $('updateBannerMessage').textContent = `Descargando: ${pct}%`;
-                    $('btnBannerUpdate').textContent = `${pct}%`;
-                } else if (payload.status === 'downloaded') {
-                    $('updateStatusText').textContent = `Versión ${payload.version ? `v${payload.version}` : ''} lista para instalar.`;
-                    $('btnInstallUpdate').classList.remove('hidden');
-                    $('updateBannerTitle').textContent = '¡Actualización lista!';
-                    $('updateBannerMessage').textContent = payload.version ? `La versión v${payload.version} está lista. Reinicia para aplicarla.` : 'Reinicia RemSwitcher para aplicar los cambios.';
-                    $('btnBannerUpdate').textContent = 'Reiniciar y actualizar';
-                    $('btnBannerUpdate').disabled = false;
-                    $('updateBanner').classList.remove('hidden');
-                    $('settingsUpdateBadge').classList.remove('hidden');
-                    showToast('Actualización lista. Pulsa en el aviso para reiniciar.', 'success');
-                } else if (payload.status === 'not-available') {
-                    $('updateStatusText').textContent = 'Tienes la versión más reciente.';
-                } else if (payload.status === 'error') {
-                    $('updateStatusText').textContent = payload.message || 'Error en actualizaciones.';
-                }
-            });
-        }
     } catch (error) {
         if (elements.statusBar) elements.statusBar.classList.add('error');
         if (elements.statusText) elements.statusText.textContent = 'No se pudieron cargar los datos locales.';
@@ -2056,5 +2033,164 @@ async function initialize() {
         showToast(error.message || 'Error de inicialización.', 'error');
     }
 }
+
+async function openStoreModal(account) {
+    const modal = $('storeModal');
+    const loading = $('storeLoading');
+    const errorDiv = $('storeError');
+    const offersContainer = $('storeOffers');
+    const timerDiv = $('storeTimer');
+
+    showModal(modal);
+    offersContainer.innerHTML = '';
+    offersContainer.classList.add('hidden');
+    timerDiv.classList.add('hidden');
+    errorDiv.classList.add('hidden');
+    loading.classList.remove('hidden');
+
+    try {
+        let data = null;
+        let isCached = false;
+        
+        // Check if there is valid cache
+        if (account && account.storeCache && Date.now() < account.storeCache.expiry) {
+            data = account.storeCache;
+            isCached = true;
+        } else {
+            // Check if this account is the active session
+            const isActive = runtimeStatus.activeSession && 
+                             ((account.riotId && runtimeStatus.activeSession.riotId && runtimeStatus.activeSession.riotId.toLowerCase() === account.riotId.toLowerCase()) || 
+                              (account.name && runtimeStatus.activeSession.riotId && runtimeStatus.activeSession.riotId.toLowerCase() === account.name.toLowerCase()));
+                              
+            if (!isActive) {
+                loading.classList.add('hidden');
+                errorDiv.classList.remove('hidden');
+                errorDiv.textContent = 'Inicia sesión con esta cuenta o pulsa "Escanear Tiendas" para ver sus ofertas.';
+                return;
+            }
+            
+            data = await rendererApi.getValorantStore();
+            
+            // Save cache if valid
+            if (data && !data.error && account) {
+                account.storeCache = {
+                    offers: data.offers,
+                    durationLeft: data.durationLeft,
+                    expiry: Date.now() + ((data.durationLeft || 86400) * 1000)
+                };
+                await rendererApi.saveAccount(account);
+                renderAccounts();
+            }
+        }
+
+        loading.classList.add('hidden');
+        
+        if (!data || data.error) {
+            errorDiv.classList.remove('hidden');
+            let errorMsg = 'Error al cargar la tienda.';
+            if (data?.error === 'NOT_LOGGED_IN') errorMsg = 'Debes iniciar sesión con esta cuenta primero.';
+            else if (data?.error === 'NO_SESSION' || data?.error === 'INVALID_SESSION') errorMsg = 'No se encontró una sesión activa de Riot Client.';
+            else if (data?.error === 'NO_ENTITLEMENTS') errorMsg = 'No se pudo obtener el token de Entitlements de Riot.';
+            else if (data?.error === 'STORE_API_ERROR') errorMsg = 'Error al conectar con la API de la tienda de Riot.';
+            errorDiv.textContent = errorMsg;
+            return;
+        }
+
+        if (data.offers && data.offers.length > 0) {
+            offersContainer.classList.remove('hidden');
+            for (const offer of data.offers) {
+                const card = document.createElement('div');
+                card.className = 'store-card';
+                
+                const img = document.createElement('img');
+                img.src = offer.image || '';
+                img.alt = offer.name || 'Skin';
+                img.className = 'store-card-img';
+                
+                const name = document.createElement('strong');
+                name.textContent = offer.name || 'Skin de Valorant';
+                name.className = 'store-card-name';
+
+                card.append(img, name);
+                offersContainer.append(card);
+            }
+            
+            if (data.durationLeft > 0 || data.expiry) {
+                timerDiv.classList.remove('hidden');
+                let leftSeconds = data.durationLeft || 0;
+                if (isCached && data.expiry) {
+                    leftSeconds = Math.max(0, Math.floor((data.expiry - Date.now()) / 1000));
+                }
+                const hours = Math.floor(leftSeconds / 3600);
+                const minutes = Math.floor((leftSeconds % 3600) / 60);
+                timerDiv.textContent = `Se actualiza en ${hours}h ${minutes}m`;
+            }
+        } else {
+            errorDiv.classList.remove('hidden');
+            errorDiv.textContent = 'No hay ofertas disponibles en este momento.';
+        }
+    } catch (err) {
+        loading.classList.add('hidden');
+        errorDiv.classList.remove('hidden');
+        errorDiv.textContent = 'Excepción al cargar la tienda: ' + err.message;
+    }
+}
+
+async function scanAllStores() {
+    const scanModal = $('scanModal');
+    const progressText = $('scanProgressText');
+    const detailsText = $('scanDetailsText');
+
+    showModal(scanModal);
+    progressText.textContent = 'Iniciando escáner...';
+    detailsText.textContent = 'Preparando cuentas de Valorant...';
+
+    try {
+        if (!rendererApi || !rendererApi.scanValorantStores) {
+            showToast('El motor de escaneo no está disponible.', 'error');
+            hideModal(scanModal);
+            return;
+        }
+
+        const result = await rendererApi.scanValorantStores(activeProfileId);
+        if (result && result.cancelled) {
+            showToast('Escáner cancelado.', 'warning');
+        } else if (result && result.success) {
+            showToast(`Escáner completado: ${result.scannedCount || 0} de ${result.total || 0} tiendas guardadas.`, 'success');
+        } else {
+            showToast(result?.message || 'No se completó el escáner.', 'info');
+        }
+    } catch (err) {
+        showToast(err.message || 'Error en el escáner de tiendas.', 'error');
+    } finally {
+        hideModal(scanModal);
+        if (rendererApi) {
+            accounts = await rendererApi.getAccounts();
+            renderAccounts();
+        }
+    }
+}
+
+if (rendererApi && rendererApi.onScanStoresProgress) {
+    rendererApi.onScanStoresProgress((data) => {
+        if ($('scanProgressText')) {
+            $('scanProgressText').textContent = `Escaneando cuenta ${data.current} de ${data.total}`;
+        }
+        if ($('scanDetailsText')) {
+            $('scanDetailsText').textContent = data.message || `Cuenta: ${data.accountName}`;
+        }
+    });
+}
+
+$('btnScanStores')?.addEventListener('click', scanAllStores);
+$('btnCancelScan')?.addEventListener('click', async () => {
+    $('scanDetailsText').textContent = 'Cancelando escáner...';
+    if (rendererApi && rendererApi.cancelScanStores) {
+        await rendererApi.cancelScanStores();
+    }
+});
+
+$('btnCloseStoreModal')?.addEventListener('click', () => hideModal($('storeModal')));
+$('btnCloseStoreModalBtn')?.addEventListener('click', () => hideModal($('storeModal')));
 
 initialize();

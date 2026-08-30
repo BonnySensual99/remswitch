@@ -14,3 +14,8 @@ resources/*.exe
 .DS_Store
 Thumbs.db
 EXTRAS/
+*.pfx
+*.pem
+*.der
+*.txt
+deceive_utils.cs
