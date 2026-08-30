@@ -16,7 +16,7 @@ async function main() {
     ipcMain.handle('save-profile', () => ({ activeProfileId: 'default', profiles: [{ id: 'default', name: 'Principal', createdAt: 0 }] }));
     ipcMain.handle('delete-profile', () => ({ activeProfileId: 'default', profiles: [{ id: 'default', name: 'Principal', createdAt: 0 }] }));
     ipcMain.handle('set-active-profile', () => ({ activeProfileId: 'default', profiles: [{ id: 'default', name: 'Principal', createdAt: 0 }] }));
-    ipcMain.handle('get-app-version', () => '1.0.1');
+    ipcMain.handle('get-app-version', () => '1.0.3');
     ipcMain.handle('get-settings', () => ({ startWithWindows: false, minimizeToTray: true, closeOnLaunch: false, confirmSwitch: true, autoLaunchGame: true, soundEnabled: false, reducedMotion: true, initialDelayMs: 1800, charDelayMs: 15, fieldDelayMs: 200, customRiotPath: '' }));
     ipcMain.handle('get-runtime-status', () => ({ riotClientFound: true, riotSignatureValid: true, activeSession: { riotId: 'Operador#EU', region: 'EU' }, runningGame: null, encryptionAvailable: true, activeRequestId: null }));
     ipcMain.handle('display:get-state', () => ({ displays: [{ name: '\\\\.\\DISPLAY1', deviceString: 'NVIDIA GeForce RTX', isPrimary: true, currentMode: { width: 1920, height: 1080, frequency: 144 }, frequencies: [60, 144], currentVibrance: 50 }], profiles: [{ id: 'default-1', name: '1080p Nativa', width: 1920, height: 1080, frequency: 0, vibrance: 50, tag: '16:9' }], nvidiaReady: true }));

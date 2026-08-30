@@ -1,6 +1,6 @@
 {
   "name": "remswitcher",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "RemSwitcher - gestor local privado de cuentas de Riot para Windows",
   "main": "main.js",
   "scripts": {
